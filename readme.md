@@ -362,16 +362,18 @@ Note that while it is technically possible for registries to encode two overlapp
 
 ## Test Vectors
 
-[TODO: after initial public feedback]
+_(pending initial implementations)_
 
 ## Implementations
 
-[TODO: after initial public feedback]
+The following software is known to support Bitcoin Cash Metadata Registries:
+
+_(pending initial implementations)_
 
 ## Feedback & Reviews
 
 - [CHIP-BCMR Issues](https://github.com/bitjson/chip-bcmr/issues)
-<!-- - [`CHIP 2022-10 BCMR: Bitcoin Cash Metadata Registries` - Bitcoin Cash Research](https://bitcoincashresearch.org/t/) -->
+- [`CHIP-BCMR: Bitcoin Cash Metadata Registries` - Bitcoin Cash Research](https://bitcoincashresearch.org/t/chip-bcmr-bitcoin-cash-metadata-registries/942)
 
 ## Changelog
 
