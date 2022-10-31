@@ -1,0 +1,12 @@
+{
+  "name": "chip-bcmr",
+  "private": true,
+  "scripts": {
+    "start": "ts-json-schema-generator --no-ref-encode --path 'bcmr-v1.schema.ts' --type 'Registry' > bcmr-v1.schema.json && prettier 'bcmr-v1.schema.json' --write"
+  },
+  "description": "This package provides package scripts to generate the Bitcoin Cash Metadata Registry JSON schema. To regenerate the schema, install the dependencies with 'npm install', then run 'npm start'.",
+  "dependencies": {
+    "prettier": "^2.7.1",
+    "ts-json-schema-generator": "^1.1.2"
+  }
+}
