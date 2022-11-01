@@ -120,13 +120,13 @@ If the DNS-resolved registry includes the [`authchain` extension](#authchain-ext
 
 ### Chain-Resolved Registries
 
-**Chain-resolved metadata registries** are associated with a particular **authbase**, a 32-byte, hex-encoded transaction hash (A.K.A. TXID) for which the [**zeroth-descendant transaction chain** (ZDTC)](#zeroth-descendant-transaction-chain) authenticates and publishes all registry updates.
+**Chain-resolved metadata registries** are associated with a particular **authbase**, a 32-byte, hex-encoded transaction hash (A.K.A. TXID) for which the [**zeroth-descendant transaction chain** (ZDTC)](#zeroth-descendant-transaction-chains) authenticates and publishes all registry updates.
 
 Chain resolution offers stronger security and better user experiences than DNS resolution:
 
 - **Enhanced identity security** – identities are controlled by unspent transaction outputs, so identity owners can employ the same security strategies used to secure funds and tokens (e.g. multisignature wallets, offline signers, time-delayed vaults, bounties/honeypots, etc.); this avoids many classes of attacks possible against DNS-resolved registries.
 - **Prevention of targeted attacks** – a hash of the registry is published on the blockchain, so clients can ensure that a received registry is identical to that received by every other client.
-- **Real-time updates** – identity updates are broadcasted by spending the identity's latest [identity output](#zeroth-descendant-transaction-chain), so clients can detect updates using standard light wallet infrastructure (e.g. [Simplified Payment Verification](https://web.archive.org/web/20100704213649/https://bitcoin.org/bitcoin.pdf)).
+- **Real-time updates** – identity updates are broadcasted by spending the identity's latest [identity output](#zeroth-descendant-transaction-chains), so clients can detect updates using standard light wallet infrastructure (e.g. [Simplified Payment Verification](https://web.archive.org/web/20100704213649/https://bitcoin.org/bitcoin.pdf)).
 
 #### Zeroth-Descendant Transaction Chains
 
@@ -255,8 +255,7 @@ The following optional URI identifiers are standardized:
 | `forum`      | A URI identifying a community forum for this identity or tag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `icon-intro` | A URI pointing to a square, animated icon that represents this identity or tag. The animation should play once (without looping) to introduce the static icon. Transparency is supported, and icons should be suitable for display against both light and dark backgrounds. Acceptable formats are `SVG`, `AVIF`, or `WebP`. For raster formats, the recommended size is `400px` by `400px`.                                                                                                                                                                                                                                                                                             |
 | `registry`   | The primary-source registry URI for this identity or tag. For DNS-resolved registries, this is the full, [Well-Known URI](#well-known-uri) from which the registry can be downloaded. For chain-resolved registries and other identities, this is the full URI of the latest registry published on-chain by the identity. For tags, The `registry` identifier should only be used when a tag represents a formal designation by a particular authority (certification, membership, ownership, etc.); when present, this URI points to the canonical registry published by that authority. Tags without this identifier are assumed to be created and applied by the containing registry. |
-
-| `support` | A URI offering user-facing support for this identity or tag. |
+| `support`    | A URI offering user-facing support for this identity or tag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 ##### Custom URI identifiers
 
