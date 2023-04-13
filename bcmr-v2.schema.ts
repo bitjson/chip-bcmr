@@ -10,11 +10,31 @@ export type URIs = {
 
 /**
  * A mapping of extension identifiers to extension definitions. Extensions may
- * be widely standardized or registry-specific, and extension definitions may
- * be values of any type.
+ * be widely standardized or application-specific, and extension definitions
+ * must be either:
+ *
+ * - `string`s,
+ * - key-value mappings of `string`s, or
+ * - two-dimensional, key-value mappings of `string`s.
+ *
+ * This limitation encourages safety and wider compatibility across
+ * implementations.
+ *
+ * To encode an array, it is recommended that each value be assigned to a
+ * numeric key indicating the item's index (beginning at `0`).
+ * Numerically-indexed objects are often a more useful and resilient
+ * data-transfer format than simple arrays because they simplify difference-only
+ * transmission: only modified indexes need to be transferred, and shifts in
+ * item order must be explicit, simplifying merges of conflicting updates.
+ *
+ * For encoding of more complex data, consider using base64 and/or
+ * string-encoded JSON.
  */
 export type Extensions = {
-  [identifier: string]: unknown;
+  [extensionIdentifier: string]:
+    | string
+    | { [key: string]: string }
+    | { [keyA: string]: { [keyB: string]: string } };
 };
 
 /**
@@ -38,19 +58,27 @@ export type Extensions = {
  */
 export type Tag = {
   /**
-   * The name of this tag for use in interfaces. Names longer than `20`
-   * characters may be elided in some interfaces.
+   * The name of this tag for use in interfaces.
    *
-   * E.g. `Individual`, `Token`, `Audited by ACME, Inc.`, etc.
+   * In user interfaces with limited space, names should be hidden beyond
+   * the first newline character or `20` characters until revealed by the user.
+   *
+   * E.g.:
+   * - `Individual`
+   * - `Token`
+   * - `Audited by ACME, Inc.`
    */
   name: string;
   /**
-   * A string describing this tag for use in user interfaces. Descriptions
-   * longer than `160` characters may be elided in some interfaces.
+   * A string describing this tag for use in user interfaces.
    *
-   * E.g. `An identity maintained by a single individual.`; `An identity
-   * representing a type of token.`; `An on-chain application that has passed
-   * security audits by ACME, Inc.`; etc.
+   * In user interfaces with limited space, descriptions should be hidden beyond
+   * the first newline character or `140` characters until revealed by the user.
+   *
+   * E.g.:
+   * - `An identity maintained by a single individual.`
+   * - `An identity representing a type of token.`
+   * - `An on-chain application that has passed security audits by ACME, Inc.`
    */
   description?: string;
   /**
@@ -88,8 +116,7 @@ export type Tag = {
   uris?: URIs;
   /**
    * A mapping of `Tag` extension identifiers to extension definitions.
-   * Extensions may be widely standardized or registry-specific, and extension
-   * definitions may be values of any type.
+   * {@link Extensions} may be widely standardized or application-specific.
    */
   extensions?: Extensions;
 };
@@ -105,7 +132,7 @@ export type Registry = {
    * The schema used by this registry. Many JSON editors can automatically
    * provide inline documentation and autocomplete support using the `$schema`
    * property, so it is recommended that registries include it. E.g.:
-   * `https://raw.githubusercontent.com/bitjson/chip-bcmr/master/registry-v1.schema.json`
+   * `https://cashtokens.org/bcmr-v2.schema.json`
    */
   $schema?: string;
   /**
@@ -164,7 +191,7 @@ export type Registry = {
    * support on-chain resolution/authentication, and the contained
    * `IdentitySnapshot` can only be authenticated via DNS/HTTPS.
    */
-  registryIdentity: string | IdentitySnapshot;
+  registryIdentity: IdentitySnapshot | string;
   /**
    * A mapping of authbases to the `IdentityHistory` for that identity.
    *
@@ -203,9 +230,64 @@ export type Registry = {
     [identifier: string]: Tag;
   };
   /**
+   * The split ID of the chain/network considered the "default" chain for this
+   * registry. Identities that do not specify a {@link IdentitySnapshot.splitId}
+   * are assumed to be set to this split ID. For a description of split IDs,
+   * see {@link Registry.chains}.
+   *
+   * If not provided, the `defaultChain` is
+   * `0000000000000000029e471c41818d24b8b74c911071c4ef0b4a0509f9b5a8ce`, the BCH
+   * side of the BCH/XEC split (mainnet). Common values include:
+   * - `00000000ae25e85d9e22cd6c8d72c2f5d4b0222289d801b7f633aeae3f8c6367`
+   * (testnet4)
+   * - `00000000040ba9641ba98a37b2e5ceead38e4e2930ac8f145c8094f94c708727`
+   * (chipnet)
+   */
+  defaultChain?: string;
+  /**
+   * A map of split IDs tracked by this registry to the {@link ChainHistory} for
+   * that chain/network.
+   *
+   * The split ID of a chain is the block header hash (A.K.A. block ID) of the
+   * first unique block after the most recent tracked split – a split after
+   * which both resulting chains are considered notable or tracked by the
+   * registry. (For chains with no such splits, this is the ID of the
+   * genesis block.)
+   *
+   * Note, split ID is inherently a "relative" identifier. After a tracked
+   * split, both resulting chains will have a new split ID. However, if a wallet
+   * has not yet heard about a particular split, that wallet will continue to
+   * reference one of the resulting chains by its previous split ID, and the
+   * split-unaware wallet may create transactions that are valid on both chains
+   * (losing claimable value if the receivers of their transactions don't
+   * acknowledge transfers on both chains). When a registry trusted by the
+   * wallet notes the split in it's `chains` map, the wallet can represent the
+   * split in the user interface using the the latest {@link ChainSnapshot} for
+   * each chain and splitting coins prior to spending (by introducing post-split
+   * coins in each transaction).
+   *
+   * This map may exclude the following well-known split IDs (all clients
+   * supporting any of these chains should build-in {@link ChainHistory} for
+   * those chains):
+   *
+   * - `0000000000000000029e471c41818d24b8b74c911071c4ef0b4a0509f9b5a8ce`:
+   *   A.K.A. mainnet – the BCH side of the BCH/XEC split.
+   * - `00000000ae25e85d9e22cd6c8d72c2f5d4b0222289d801b7f633aeae3f8c6367`:
+   *   A.K.A testnet4 – the test network on which CHIPs are activated
+   *   simultaneously with mainnet (May 15 at 12 UTC).
+   * - `00000000040ba9641ba98a37b2e5ceead38e4e2930ac8f145c8094f94c708727`:
+   *   A.K.A. chipnet – the test network on which CHIPs are activated 6 months
+   *   before mainnet (November 15 at 12 UTC).
+   *
+   * All other split IDs referenced by this registry should be included in this
+   * map.
+   */
+  chains?: {
+    [splitId: string]: ChainHistory;
+  };
+  /**
    * A mapping of `Registry` extension identifiers to extension definitions.
-   * Extensions may be widely standardized or registry-specific, and extension
-   * definitions may be values of any type.
+   * {@link Extensions} may be widely standardized or application-specific.
    *
    * Standardized extensions for `Registry`s include the `locale` extension. See
    * https://github.com/bitjson/chip-bcmr#locales-extension for details.
@@ -225,23 +307,27 @@ export type Registry = {
 
 /**
  * A snapshot of the metadata for a particular identity at a specific time.
- *
  */
 export type IdentitySnapshot = {
   /**
-   * The name of this identity for use in interfaces. Names longer than
-   * `20` characters may be elided in some interfaces.
+   * The name of this identity for use in interfaces.
+   *
+   * In user interfaces with limited space, names should be hidden beyond
+   * the first newline character or `20` characters until revealed by the user.
    *
    * E.g. `ACME Class A Shares`, `ACME Registry`, `Satoshi Nakamoto`, etc.
    */
   name: string;
   /**
    * A string describing this identity for use in user interfaces.
-   * Descriptions longer than `160` characters may be elided in some interfaces.
    *
-   * E.g. `The common stock issued by ACME, Inc.`, `A metadata
-   * registry maintained by Company Name, the embedded registry for Wallet
-   * Name.`; `Software developer and lead maintainer of Wallet Name.`; etc.
+   * In user interfaces with limited space, descriptions should be hidden beyond
+   * the first newline character or `140` characters until revealed by the user.
+   *
+   * E.g.:
+   * - `The common stock issued by ACME, Inc.`
+   * - `A metadata registry maintained by Company Name, the embedded registry for Wallet Name.`
+   * - `Software developer and lead maintainer of Wallet Name.`
    */
   description?: string;
   /**
@@ -251,35 +337,19 @@ export type IdentitySnapshot = {
    */
   tags?: string[];
   /**
-   * The timing information for the introduction of this identity snapshot.
-   * Each timestamps may be provided as either an ISO string (simplified
-   * extended ISO 8601 format) or as a locktime value: an integer from `0` to
-   * `4294967295` (inclusive) where values less than `500000000` are understood
-   * to be a block height (the current block number in the chain, beginning from
-   * block `0`), and values greater than or equal to `500000000` are understood
-   * to be a Median Time Past (BIP113) UNIX timestamp.
+   * The timestamp at which this identity snapshot is fully in effect. This
+   * value should only be provided if the snapshot takes effect over a period
+   * of time (e.g. an in-circulation token identity is gradually migrating to
+   * a new category). In these cases, clients should gradually migrate to
+   * using the new information beginning after the identity snapshot's timestamp
+   * and the `migrated` time.
    *
-   * Generally, timestamps should be provided as an ISO string unless on-chain
-   * artifacts require the locktime value (e.g. an on-chain migration that is
-   * set to complete at a particular locktime value).
+   * This timestamp must be provided in simplified extended ISO 8601 format, a
+   * 24-character string of format `YYYY-MM-DDTHH:mm:ss.sssZ` where timezone is
+   * zero UTC (denoted by `Z`). Note, this is the format returned by ECMAScript
+   * `Date.toISOString()`.
    */
-  time: {
-    /**
-     * The timestamp at which this identity snapshot begins to be active. If
-     * `complete` isn't specified, this is a precise time at which this
-     * snapshot takes effect and clients should begin using the new information.
-     */
-    begin: string | number;
-    /**
-     * The timestamp at which this identity snapshot is fully in effect. This
-     * value should only be provided if the snapshot takes effect over a period
-     * of time (e.g. an in-circulation token identity is gradually migrating to
-     * a new category). In these cases, clients should gradually migrate to
-     * using the new information beginning after the `begin` time and completing
-     * at the `complete` time.
-     */
-    complete?: string | number;
-  };
+  migrated?: number | string;
   /**
    * If this identity is a type of token, a data structure indicating how tokens
    * should be displayed in user interfaces. Omitted for non-token identities.
@@ -287,7 +357,7 @@ export type IdentitySnapshot = {
   token?: {
     /**
      * The current token category used by this identity. Often, this will be
-     * equal to the identities authbase, but some token identities must migrate
+     * equal to the identity's authbase, but some token identities must migrate
      * to new categories for technical reasons.
      */
     category: string;
@@ -321,25 +391,30 @@ export type IdentitySnapshot = {
        * interfaces). Descriptions longer than `160` characters may be elided in
        * some interfaces.
        *
-       * E.g. `ACME DEX NFT order receipts are issued when you place orders on
-       * the decentralized exchange. After orders are processed, order receipts
-       * can be redeemed for purchased tokens or sales proceeds.`; `ACME Game
-       * collectable NFTs unlock unique playable content, user avatars, and item
-       * skins in ACME Game Online.`; etc.
+       * E.g.:
+       * - "ACME DEX NFT order receipts are issued when you place orders on the
+       * decentralized exchange. After orders are processed, order receipts can
+       * be redeemed for purchased tokens or sales proceeds.";
+       * - "ACME Game collectable NFTs unlock unique playable content, user
+       * avatars, and item skins in ACME Game Online."; etc.
        */
       description?: string;
       /**
        * A mapping of field identifier to field definitions for the data fields
        * that can appear in NFT commitments of this category.
        */
-      fields: {
+      fields?: {
         [identifier: string]: {
           /**
            * The name of this field for use in interfaces. Names longer than
            * `20` characters may be elided in some interfaces.
            *
-           * E.g. `BCH Pledged`, `Tokens Sold`, `Seat Number`,
-           * `IPFS Content Identifier`, `HTTPS URL` etc.
+           * E.g.:
+           * - `BCH Pledged`
+           * - `Tokens Sold`
+           * - `Seat Number`,
+           * - `IPFS Content Identifier`
+           * - `HTTPS URL`
            */
           name?: string;
           /**
@@ -347,11 +422,10 @@ export type IdentitySnapshot = {
            * interfaces). Descriptions longer than `160` characters may be
            * elided in some interfaces.
            *
-           * E.g. `The BCH value pledged at the time this receipt was issued.`;
-           * `The number of tokens sold in this order.`; `The seat number
-           * associated with this ticket.`; `The IPFS`
-           * collectable NFTs unlock unique playable content, user avatars, and item
-           * skins in ACME Game Online.`; etc.
+           * E.g.:
+           * - `The BCH value pledged at the time this receipt was issued.`
+           * - `The number of tokens sold in this order.`
+           * - `The seat number associated with this ticket.`
            */
           description?: string;
           /**
@@ -392,8 +466,8 @@ export type IdentitySnapshot = {
                   | 'hex'
                   | 'https-url'
                   | 'ipfs-cid'
-                  | `locktime`
-                  | 'utf8';
+                  | 'utf8'
+                  | `locktime`;
               }
             | {
                 type: 'number';
@@ -447,36 +521,63 @@ export type IdentitySnapshot = {
           uris?: URIs;
           /**
            * A mapping of NFT field extension identifiers to extension
-           * definitions. Extensions may be widely standardized or
-           * registry-specific, and extension definitions may be values of
-           * any type.
+           * definitions. {@link Extensions} may be widely standardized or
+           * application-specific.
            */
           extensions?: Extensions;
         };
       };
       /**
-       * Parsing and interpretation information for all NFTs of this category.
+       * Parsing and interpretation information for all NFTs of this category;
+       * this enables generalized wallets to parse and display detailed
+       * information about all NFTs held by the wallet, e.g. `BCH Pledged`,
+       * `Order Price`, `Seat Number`, `Asset Number`,
+       * `IPFS Content Identifier`, `HTTPS URL`, etc.
        *
        * Parsing instructions are provided in the `bytecode` property, and the
        * results are interpreted using the `types` property.
        */
       parse: {
         /**
-         * A segment of hex-encoded Bitcoin Cash VM bytecode that parses NFT
-         * commitments of this category and returns a list of NFT field values
-         * via the altstack. The `bytecode` is taken as locking bytecode
-         * evaluated after pushing the full NFT commitment to the stack (as if
-         * pushed in a single-operation unlocking bytecode).
+         * A segment of hex-encoded Bitcoin Cash VM bytecode that parses UTXOs
+         * holding NFTs of this category, identifies the NFT's type within the
+         * category, and returns a list of the NFT's field values via the
+         * altstack.
          *
-         * If the resulting stack is not valid (a single "truthy" element
-         * remaining on the stack) – or if the altstack is empty – parsing has
-         * failed and clients should represent the NFT as unable to be parsed
-         * (e.g. simply display the full `commitment`).
+         * The parse `bytecode` is evaluated by instantiating and partially
+         * verifying a standardized NFT parsing transaction:
+         * - version: `2`
+         * - inputs:
+         *   - 0: Spends the UTXO containing the NFT with an empty
+         *   unlocking bytecode and sequence number of `0`.
+         *   - 1: Spends index `0` of the empty hash outpoint, with locking
+         *   bytecode set to `parse.bytecode`, unlocking bytecode `OP_1`
+         *   (`0x51`) and sequence number `0`.
+         * - outputs:
+         *   - 0: A locking bytecode of OP_RETURN (`0x6a`) and value of `0`.
+         * - locktime: `0`
+         *
+         * After input 1 of this NFT parsing transaction is evaluated, if the
+         * resulting stack is not valid (a single "truthy" element remaining on
+         * the stack) – or if the altstack is empty – parsing has failed and
+         * clients should represent the NFT as unable to be parsed (e.g. simply
+         * display the full `commitment` as a hex-encoded value in the user
+         * interface).
          *
          * On successful parsing evaluations, the bottom item on the altstack
          * indicates the type of the NFT according to the matching definition in
          * `types`. If no match is found, clients should represent the NFT as
          * unable to be parsed.
+         *
+         * For example:
+         * - `00d26b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_TOALTSTACK) takes the full
+         * contents of the commitment as a fixed type; this can be used for
+         * collections of unique, "numbered" NFTs. (Commitments of `01`, `02`,
+         * `03`, etc.)
+         * - `00d2517f7c6b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_SWAP
+         * OP_TOALTSTACK OP_TOALTSTACK) splits the commitment after 1 byte,
+         * pushing the first byte to the altstack as an NFT type and the
+         * remaining segment of the commitment as the first NFT field value.
          */
         bytecode: string;
         /**
@@ -502,19 +603,23 @@ export type IdentitySnapshot = {
             name: string;
             /**
              * A string describing this NFT type for use in user interfaces.
-             * Descriptions longer than `160` characters may be elided in
-             * some interfaces.
              *
-             * E.g. `Receipts issued by the exchange to record details about
+             * In user interfaces with limited space, names should be hidden
+             * beyond the first newline character or `140` characters until
+             * revealed by the user.
+             *
+             * E.g.:
+             * - "Receipts issued by the exchange to record details about
              * purchases. After settlement, these receipts are redeemed for the
-             * purchased tokens.`; `Receipts issued by the crowdfunding campaign
+             * purchased tokens.";
+             * - "Receipts issued by the crowdfunding campaign
              * to document the value of funds pledged. If the user decides to
              * cancel their pledge before the campaign completes, these receipts
-             * can be redeemed for a full refund.`; `Tickets issued for events
-             * at ACME Stadium.`; `Sealed ballots certified by ACME
-             * decentralized organization during the voting period. After the
-             * voting period ends, these ballots must be revealed to reclaim the
-             * tokens used for voting.`; etc.
+             * can be redeemed for a full refund.";
+             * - "Tickets issued for events at ACME Stadium.";
+             * - Sealed ballots certified by ACME decentralized organization
+             * during the voting period. After the voting period ends, these
+             * ballots must be revealed to reclaim the tokens used for voting."
              */
             description?: string;
             /**
@@ -544,9 +649,8 @@ export type IdentitySnapshot = {
             uris?: URIs;
             /**
              * A mapping of NFT type extension identifiers to extension
-             * definitions. Extensions may be widely standardized or
-             * registry-specific, and extension definitions may be values of
-             * any type.
+             * definitions. {@link Extensions} may be widely standardized or
+             * application-specific.
              */
             extensions?: Extensions;
           };
@@ -567,7 +671,7 @@ export type IdentitySnapshot = {
    * if the burned identity represented a token type – consider burning any
    * remaining tokens of that category to reclaim funds from those outputs.
    */
-  status?: 'active' | 'inactive' | 'burned';
+  status?: 'active' | 'burned' | 'inactive';
 
   /**
    * A mapping of identifiers to URIs associated with this identity. URI
@@ -604,9 +708,16 @@ export type IdentitySnapshot = {
   uris?: URIs;
 
   /**
+   * The split ID of this identity's chain of record.
+   *
+   * If undefined, defaults to {@link Registry.defaultChain}.
+   */
+  splitId?: string;
+
+  /**
    * A mapping of `IdentitySnapshot` extension identifiers to extension
-   * definitions. Extensions may be widely standardized or registry-specific,
-   * and extension definitions may be values of any type.
+   * definitions. {@link Extensions} may be widely standardized or
+   * application-specific.
    *
    * Standardized extensions for `IdentitySnapshot`s include the `authchain`
    * extension. See
@@ -616,24 +727,104 @@ export type IdentitySnapshot = {
 };
 
 /**
- * An array of `IdentitySnapshot`s, ordered from newest to oldest documenting
+ * A snapshot of the metadata for a particular chain/network at a specific
+ * time. This allows for registries to provide similar metadata for each chain's
+ * native currency unit (name, description, symbol, icon, etc.) as can be
+ * provided for other registered tokens.
+ */
+export type ChainSnapshot = Omit<IdentitySnapshot, 'migrated' | 'token'> & {
+  /**
+   * A data structure indicating how the chain's native currency units should be
+   * displayed in user interfaces.
+   */
+  token: {
+    /**
+     * An abbreviation used to uniquely identity this native currency unit.
+     *
+     * Symbols must be comprised only of capital letters, numbers, and dashes
+     * (`-`). This can be validated with the regular expression:
+     * `/^[-A-Z0-9]+$/`.
+     */
+    symbol: string;
+    /**
+     * An integer between `0` and `18` (inclusive) indicating the divisibility
+     * of the primary unit of this native currency.
+     *
+     * This is the number of digits that can appear after the decimal separator
+     * in currency amounts. For a currency with a `symbol` of `SYMBOL` and a
+     * `decimals` of `2`, an amount of `12345` should be displayed as
+     * `123.45 SYMBOL`.
+     *
+     * If omitted, defaults to `0`.
+     */
+    decimals?: number;
+  };
+};
+
+/**
+ * A field keyed by timestamps to document the evolution of the field. Each
+ * timestamp must be provided in simplified extended ISO 8601 format, a
+ * 24-character string of format `YYYY-MM-DDTHH:mm:ss.sssZ` where timezone is
+ * zero UTC (denoted by `Z`). Note, this is the format returned by ECMAScript
+ * `Date.toISOString()`.
+ *
+ * For example, to insert a new value:
+ * ```ts
+ * const result = { ...previousValue, [(new Date()).toISOString()]: newValue };
+ * ```
+ */
+export type RegistryTimestampKeyedValues<T> = {
+  [timestamp: number | string]: T;
+};
+
+/**
+ * A block height-keyed map of {@link ChainSnapshot}s documenting the evolution
+ * of a particular chain/network's identity. Like {@link IdentityHistory}, this
+ * structure allows wallets and other user interfaces to offer better
+ * experiences when a chain identity is rebranded, redenominated, or other
+ * important metadata is modified in a coordinated update.
+ */
+export type ChainHistory = RegistryTimestampKeyedValues<ChainSnapshot>;
+
+/**
+ * A timestamp-keyed map of {@link IdentitySnapshot}s documenting
  * the evolution of a particular identity. Typically, the current identity
- * information is the record at index `0`, but in cases where a planned
- * migration has not yet begun (the snapshot's `time.begin` has not been
- * reached), the record at index `1` is considered the current identity.
+ * information is the latest record when lexicographically sorted, but in cases
+ * where a planned migration has not yet begun (the snapshot's timestamp has not
+ * yet been reached), the immediately preceding record is considered the
+ * current identity.
  *
  * This strategy allows wallets and other user interfaces to offer better
  * experiences when an identity is rebranded, a token redenominated, or other
  * important metadata is modified in a coordinated update. For example, a wallet
  * may warn token holders of a forthcoming rebranding of fungible tokens they
  * hold; after the change, the wallet may continue to offer prominent interface
- * hints that the rebranded tokens was recently updated.
+ * hints that the rebranded token identity was recently updated.
  *
- * Note, only the `IdentitySnapshot`s at index `0` and `1` can be considered
- * part of an identities "current" information (based on their `time` settings
- * in relation to current time). E.g. even if two snapshots have active,
- * overlapping migration periods (i.e. the snapshot at `2` is still relevant for
- * the snapshot at `1`), clients should only attempt to display the migration
- * from the snapshot at index `1` to that at index `0`.
+ * Note, only the latest two {@link IdentitySnapshot}s should be considered
+ * part of an identity's "current" information. E.g. even if two snapshots have
+ * active, overlapping migration periods (i.e. an older snapshot's
+ * {@link IdentitySnapshot.migrated} timestamp has not yet been reached),
+ * clients should only attempt to display the migration from the previous to the
+ * latest snapshot.
+ *
+ * If the current snapshot's {@link IdentitySnapshot.migrated} isn't specified,
+ * the snapshot's index is a precise time at which the snapshot takes effect and
+ * clients should begin using the new information. If `migrated` is specified,
+ * the snapshot's index is the timestamp at which the transition is considered
+ * to begin, see {@link IdentitySnapshot.migrated} for details.
+ *
+ * Each timestamp must be provided in simplified extended ISO 8601 format, a
+ * 24-character string of format `YYYY-MM-DDTHH:mm:ss.sssZ` where timezone is
+ * zero UTC (denoted by `Z`). Note, this is the format returned by ECMAScript
+ * `Date.toISOString()`.
+ *
+ * In the case that an identity change occurs due to on-chain activity (e.g. an
+ * on-chain migration that is set to complete at a particular locktime value),
+ * registry-recorded timestamps reflect the real-world time at which the
+ * maintainer of the registry believes the on-chain activity to have actually
+ * occurred. Likewise, future-dated timestamps indicate a precise real-world
+ * time at which a snapshot is estimated to take effect, rather than the Median
+ * Time Past (BIP113) UNIX timestamp or another on-chain measurement of time.
  */
-export type IdentityHistory = IdentitySnapshot[];
+export type IdentityHistory = RegistryTimestampKeyedValues<IdentitySnapshot>;
