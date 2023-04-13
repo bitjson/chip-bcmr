@@ -6,8 +6,8 @@
         Maintainer: Jason Dreyzehner
         Status: Draft
         Initial Publication Date: 2022-10-31
-        Latest Revision Date: 2022-10-31
-        Version: 1.0.0
+        Latest Revision Date: 2022-04-13
+        Version: 2.0.0-draft
 
 <details>
 
@@ -378,7 +378,13 @@ _(pending initial implementations)_
 
 This section summarizes the evolution of this document.
 
-- **Draft**
+- **Draft v2.0.0**
+  - Established limits for `Extensions` ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Support for multiple chains (defaults: `mainnet`, `chipnet`, `testnet4`) ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Simplified registry's conception of time ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Standardized parsing transaction to eliminate undefined behavior ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Converted `identities` from an array to an object ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+- **v1.0.0 – 2022-10-31** ([`5b24b0ec`](https://github.com/bitjson/chip-bcmr/blob/5b24b0ec93cf9316222ab2ea2e2ffe8a9f390b12/readme.md))
   - Initial publication
 
 ## Copyright
