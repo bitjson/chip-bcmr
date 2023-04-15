@@ -106,7 +106,7 @@
         },
         "migrated": {
           "description": "The timestamp at which this identity snapshot is fully in effect. This value should only be provided if the snapshot takes effect over a period of time (e.g. an in-circulation token identity is gradually migrating to a new category). In these cases, clients should gradually migrate to using the new information beginning after the identity snapshot's timestamp and the `migrated` time.\n\nThis timestamp must be provided in simplified extended ISO 8601 format, a 24-character string of format `YYYY-MM-DDTHH:mm:ss.sssZ` where timezone is zero UTC (denoted by `Z`). Note, this is the format returned by ECMAScript `Date.toISOString()`.",
-          "type": ["number", "string"]
+          "type": "string"
         },
         "name": {
           "description": "The name of this identity for use in interfaces.\n\nIn user interfaces with limited space, names should be hidden beyond the first newline character or `20` characters until revealed by the user.\n\nE.g. `ACME Class A Shares`, `ACME Registry`, `Satoshi Nakamoto`, etc.",
@@ -282,6 +282,36 @@
       "required": ["name"],
       "type": "object"
     },
+    "OffChainRegistryIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "A string describing this identity for use in user interfaces.\n\nIn user interfaces with limited space, descriptions should be hidden beyond the first newline character or `140` characters until revealed by the user.\n\nE.g.:\n- `The common stock issued by ACME, Inc.`\n- `A metadata registry maintained by Company Name, the embedded registry for Wallet Name.`\n- `Software developer and lead maintainer of Wallet Name.`",
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/definitions/Extensions",
+          "description": "A mapping of `IdentitySnapshot` extension identifiers to extension definitions.  {@link  Extensions }  may be widely standardized or application-specific.\n\nStandardized extensions for `IdentitySnapshot`s include the `authchain` extension. See https://github.com/bitjson/chip-bcmr#authchain-extension for details."
+        },
+        "name": {
+          "description": "The name of this identity for use in interfaces.\n\nIn user interfaces with limited space, names should be hidden beyond the first newline character or `20` characters until revealed by the user.\n\nE.g. `ACME Class A Shares`, `ACME Registry`, `Satoshi Nakamoto`, etc.",
+          "type": "string"
+        },
+        "tags": {
+          "description": "An array of `Tag` identifiers marking the `Tag`s associated with this identity. All specified tag identifiers must be defined in the registry's `tags` mapping.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "uris": {
+          "$ref": "#/definitions/URIs",
+          "description": "A mapping of identifiers to URIs associated with this identity. URI identifiers may be widely-standardized or registry-specific. Values must be valid URIs, including a protocol prefix (e.g. `https://` or `ipfs://`). Clients are only required to support `https` and `ipfs` URIs, but any scheme may be specified.\n\nThe following identifiers are recommended for all identities:\n- `icon`\n- `web`\n\nThe following optional identifiers are standardized:\n- `blog`\n- `chat`\n- `forum`\n- `icon-intro`\n- `registry`\n- `support`\n\nFor details on these standard identifiers, see: https://github.com/bitjson/chip-bcmr#uri-identifiers\n\nCustom URI identifiers allow for sharing social networking profiles, p2p connection information, and other application-specific URIs. Identifiers must be lowercase, alphanumeric strings, with no whitespace or special characters other than dashes (as a regular expression: `/^[-a-z0-9]+$/`).\n\nFor example, some common identifiers include: `discord`, `docker`, `facebook`, `git`, `github`, `gitter`, `instagram`, `linkedin`, `matrix`, `npm`, `reddit`, `slack`, `substack`, `telegram`, `twitter`, `wechat`, `youtube`."
+        }
+      },
+      "required": ["name"],
+      "type": "object"
+    },
     "Registry": {
       "additionalProperties": false,
       "description": "A Bitcoin Cash Metadata Registry is an authenticated JSON file containing metadata about tokens, identities, contract applications, and other on-chain artifacts. BCMRs conform to the Bitcoin Cash Metadata Registry JSON Schema, and they can be published and maintained by any entity or individual.",
@@ -323,7 +353,7 @@
         "registryIdentity": {
           "anyOf": [
             {
-              "$ref": "#/definitions/IdentitySnapshot"
+              "$ref": "#/definitions/OffChainRegistryIdentity"
             },
             {
               "type": "string"

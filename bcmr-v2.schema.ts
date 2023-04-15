@@ -512,7 +512,7 @@ export type IdentitySnapshot = {
    * zero UTC (denoted by `Z`). Note, this is the format returned by ECMAScript
    * `Date.toISOString()`.
    */
-  migrated?: number | string;
+  migrated?: string;
 
   /**
    * If this identity is a type of token, a data structure indicating how tokens
@@ -637,7 +637,7 @@ export type ChainSnapshot = Omit<IdentitySnapshot, 'migrated' | 'token'> & {
  * ```
  */
 export type RegistryTimestampKeyedValues<T> = {
-  [timestamp: number | string]: T;
+  [timestamp: string]: T;
 };
 
 /**
@@ -691,6 +691,11 @@ export type ChainHistory = RegistryTimestampKeyedValues<ChainSnapshot>;
  * Time Past (BIP113) UNIX timestamp or another on-chain measurement of time.
  */
 export type IdentityHistory = RegistryTimestampKeyedValues<IdentitySnapshot>;
+
+export type OffChainRegistryIdentity = Pick<
+  IdentitySnapshot,
+  'name' | 'description' | 'uris' | 'tags' | 'extensions'
+>;
 
 /**
  * A Bitcoin Cash Metadata Registry is an authenticated JSON file containing
@@ -767,7 +772,7 @@ export type Registry = {
    * support on-chain resolution/authentication, and the contained
    * `IdentitySnapshot` can only be authenticated via DNS/HTTPS.
    */
-  registryIdentity: IdentitySnapshot | string;
+  registryIdentity: OffChainRegistryIdentity | string;
 
   /**
    * A mapping of authbases to the `IdentityHistory` for that identity.
