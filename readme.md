@@ -6,8 +6,8 @@
         Maintainer: Jason Dreyzehner
         Status: Draft
         Initial Publication Date: 2022-10-31
-        Latest Revision Date: 2022-10-31
-        Version: 1.0.0
+        Latest Revision Date: 2022-04-13
+        Version: 2.0.0-draft
 
 <details>
 
@@ -197,7 +197,7 @@ To avoid leaking connection information to registry hosts, clients may choose to
 
 ### Metadata Registry JSON Schema
 
-Metadata registries conform to the [**Metadata Registry JSON Schema**](./registry.schema.json) ([source TypeScript type definitions](./registry.schema.ts)). The JSON schema is internally-documented, but notable features are discussed below.
+Metadata registries conform to the [**Metadata Registry JSON Schema**](./bcmr-v2.schema.json) ([source TypeScript type definitions](./bcmr-v2.schema.ts)). The JSON schema is internally-documented, but notable features are discussed below.
 
 #### Identities
 
@@ -213,13 +213,13 @@ All identity metadata is organized into **identity snapshots**, data structures 
 
 Snapshots can include general information about the identity like `name`, `description`, [`tags`](#tags), and [`uris`](#uri-identifiers). For identities that represent token categories, snapshots can include the current `category`, display information like `symbol`, and `decimals`, and detailed technical metadata like parsing, encoding, and semantic information about various types of NFTs available within the token category.
 
-At any moment in time, only one snapshot is considered "current" for an identity. However, using the `time.complete` property, a snapshot can indicate that the identity's prior snapshot remains relevant (e.g. an in-circulation token identity is gradually migrating to a new token category).
+At any moment in time, only one snapshot is considered "current" for an identity. However, using the `IdentitySnapshot.migrated` property, a snapshot can indicate that the identity's prior snapshot remains relevant (e.g. an in-circulation token identity is gradually migrating to a new token category).
 
 #### Identity History
 
-Each identity in a metadata registry is represented by an `IdentityHistory` data structure, an array of [`IdentitySnapshot`](#identitysnapshots)s ordered from newest (at index `0`) to oldest. `IdentityHistory` data structures allow clients to construct a timeline of the evolution of a particular identity, helping users recognize and disambiguate identities that have changed significantly since the user last interacted with that identity.
+Each identity in a metadata registry is represented by an `IdentityHistory` data structure, a map of ISO timestamps to [`IdentitySnapshot`](#identitysnapshots)s. `IdentityHistory` data structures allow clients to construct a timeline of the evolution of a particular identity, helping users recognize and disambiguate identities that have changed significantly since the user last interacted with that identity.
 
-Typically, the current identity information is the record at index `0`, but in cases where a [planned migration](#handling-identity-snapshot-migrations) has not yet begun (the snapshot's `time.begin` has not been reached), the record at index `1` is considered the current identity.
+Typically, the current identity information is the latest record when the keys (timestamps) are lexicographically sorted, but in cases where a [planned migration](#handling-identity-snapshot-migrations) has not yet begun (the snapshot's timestamp has not been reached), the immediately preceding record is considered the current identity.
 
 #### Tags
 
@@ -312,7 +312,7 @@ When the `locales` extension is configured, clients should use this localized re
 
 The `authchain` extension is standardized for `IdentitySnapshot`s. When provided, `authchain` reduces the work and data required for clients to [verify the metadata](#chain-verified-identities) of a particular identity.
 
-The `authchain` extension value must be an array of strings. The first string (index `0`) must be the hex-encoded [authbase transaction](#zeroth-descendant-transaction-chains) for the identity (the identity's authbase is this transaction's ID). Each subsequent string must be the next transaction in the authchain, and the final string must be the latest known [authhead transaction](#zeroth-descendant-transaction-chains) for the identity.
+The `authchain` extension value must be an numerically-indexed object of strings, where all indexes are contiguous integers beginning with `0`. The first string (index `0`) must be the hex-encoded [authbase transaction](#zeroth-descendant-transaction-chains) for the identity (the identity's authbase is this transaction's ID). Each subsequent string must be the next transaction in the authchain, and the final string must be the latest known [authhead transaction](#zeroth-descendant-transaction-chains) for the identity.
 
 Clients may use the `authchain` extension to rapidly update their records for a particular identity using the following validation algorithm:
 
@@ -353,11 +353,11 @@ If this validation fails, clients should either:
 
 #### Handling Identity Snapshot Migrations
 
-Each `IdentitySnapshot` must indicate a `time.begin` at which the snapshot begins to take effect. If no `time.complete` is provided, the snapshot's migration is considered **instant**: the new information should be displayed immediately after the specified time has been reached. If `time.complete` is provided, the snapshot's migration is considered **gradual**: the migration period begins at `time.begin` and should be complete by `time.complete`. Clients are encouraged to surface both kinds of migrations to users.
+Each `IdentitySnapshot` is assigned to a timestamp at which the snapshot began or will begin to take effect. If no `IdentitySnapshot.migrated` timestamp is provided, the snapshot's migration is considered **instant**: the new information should be displayed immediately after the assigned timestamp has been reached. If `IdentitySnapshot.migrated` is provided, the snapshot's migration is considered **gradual**: the migration period begins at the `IdentitySnapshot`'s initial timestamp and completes upon reaching the `IdentitySnapshot.migrated` timestamp. Clients are encouraged to surface both kinds of migrations to users.
 
 **Where possible, clients should notify users about upcoming and recent migrations that impact in-use identities.**
 
-Note that while it is technically possible for registries to encode two overlapping migrations, clients should only attempt to use information from the latest migration (between the snapshots at index `0` and `1`). When validating registries, `IdentityHistory`s with out-of-order snapshots (i.e. snapshots are not ordered by `time.begin` with the latest snapshot at index `0`) or overlapping migrations should be considered malformed, and clients may refuse to accept malformed registries.
+Note that while it is technically possible for registries to encode two overlapping migrations, clients should only attempt to use information from the latest migration (between the latest and previous snapshots when timestamps are lexicographically sorted).
 
 ## Test Vectors
 
@@ -378,7 +378,13 @@ _(pending initial implementations)_
 
 This section summarizes the evolution of this document.
 
-- **Draft**
+- **Draft v2.0.0**
+  - Established limits for `Extensions` ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Support for multiple chains (defaults: `mainnet`, `chipnet`, `testnet4`) ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Simplified registry's conception of time ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Standardized parsing transaction to eliminate undefined behavior ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Converted `identities` from an array to an object ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+- **v1.0.0 – 2022-10-31** ([`5b24b0ec`](https://github.com/bitjson/chip-bcmr/blob/5b24b0ec93cf9316222ab2ea2e2ffe8a9f390b12/readme.md))
   - Initial publication
 
 ## Copyright
