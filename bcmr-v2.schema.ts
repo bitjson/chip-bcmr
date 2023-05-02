@@ -129,8 +129,8 @@ export type Tag = {
  */
 export type NftType = {
   /**
-   * The name of this NFT type for use in interfaces. Names longer than
-   * `20` characters may be elided in some interfaces.
+   * The name of this NFT type for use in interfaces. Names longer than `20`
+   * characters may be elided in some interfaces.
    *
    * E.g. `Market Order Buys`, `Limit Order Sales`, `Pledge Receipts`,
    * `ACME Stadium Tickets`, `Sealed Votes`, etc.
@@ -140,56 +140,53 @@ export type NftType = {
   /**
    * A string describing this NFT type for use in user interfaces.
    *
-   * In user interfaces with limited space, names should be hidden
-   * beyond the first newline character or `140` characters until
-   * revealed by the user.
+   * In user interfaces with limited space, names should be hidden beyond the
+   * first newline character or `140` characters until revealed by the user.
    *
    * E.g.:
-   * - "Receipts issued by the exchange to record details about
-   * purchases. After settlement, these receipts are redeemed for the
-   * purchased tokens.";
-   * - "Receipts issued by the crowdfunding campaign
-   * to document the value of funds pledged. If the user decides to
-   * cancel their pledge before the campaign completes, these receipts
-   * can be redeemed for a full refund.";
+   * - "Receipts issued by the exchange to record details about purchases. After
+   * settlement, these receipts are redeemed for the purchased tokens.";
+   * - "Receipts issued by the crowdfunding campaign to document the value of
+   * funds pledged. If the user decides to cancel their pledge before the
+   * campaign completes, these receipts can be redeemed for a full refund.";
    * - "Tickets issued for events at ACME Stadium.";
-   * - Sealed ballots certified by ACME decentralized organization
-   * during the voting period. After the voting period ends, these
-   * ballots must be revealed to reclaim the tokens used for voting."
+   * - Sealed ballots certified by ACME decentralized organization during the
+   * voting period. After the voting period ends, these ballots must be revealed
+   * to reclaim the tokens used for voting."
    */
   description?: string;
 
   /**
-   * A list of identifiers for fields contained in NFTs of this type.
-   * On successful parsing evaluations, the bottom item on the
-   * altstack indicates the matched NFT type, and the remaining
-   * altstack items represent NFT field contents in the order listed
-   * (where `fields[0]` is the second-to-bottom item, and the final
-   * item in `fields` is the top of the altstack).
+   * A list of identifiers for fields contained in NFTs of this type. On
+   * successful parsing evaluations, the bottom item on the altstack indicates
+   * the matched NFT type, and the remaining altstack items represent NFT field
+   * contents in the order listed (where `fields[0]` is the second-to-bottom
+   * item, and the final item in `fields` is the top of the altstack).
    *
-   * Fields should be ordered by recommended importance from most
-   * important to least important; in user interfaces, clients should
-   * display fields at lower indexes more prominently than those at
-   * higher indexes, e.g. if some fields cannot be displayed in
-   * minimized interfaces, higher-importance fields can still be
-   * represented. (Note, this ordering is controlled by the bytecode
+   * Fields should be ordered by recommended importance from most important to
+   * least important; in user interfaces, clients should display fields at lower
+   * indexes more prominently than those at higher indexes, e.g. if some fields
+   * cannot be displayed in minimized interfaces, higher-importance fields can
+   * still be represented. (Note, this ordering is controlled by the bytecode
    * specified in `token.nft.parse.bytecode`.)
+   *
+   * If this is a sequential NFT, (the category's `parse.bytecode` is
+   * undefined), `fields` should be omitted or set to `undefined`.
    */
   fields?: string[];
 
   /**
-   * A mapping of identifiers to URIs associated with this NFT type.
-   * URI identifiers may be widely-standardized or registry-specific.
-   * Values must be valid URIs, including a protocol prefix (e.g.
-   * `https://` or `ipfs://`). Clients are only required to support
-   * `https` and `ipfs` URIs, but any scheme may be specified.
+   * A mapping of identifiers to URIs associated with this NFT type. URI
+   * identifiers may be widely-standardized or registry-specific. Values must be
+   * valid URIs, including a protocol prefix (e.g. `https://` or `ipfs://`).
+   * Clients are only required to support `https` and `ipfs` URIs, but any
+   * scheme may be specified.
    */
   uris?: URIs;
 
   /**
-   * A mapping of NFT type extension identifiers to extension
-   * definitions. {@link Extensions} may be widely standardized or
-   * application-specific.
+   * A mapping of NFT type extension identifiers to extension definitions.
+   * {@link Extensions} may be widely standardized or application-specific.
    */
   extensions?: Extensions;
 };
@@ -201,12 +198,13 @@ export type NftType = {
 export type NftCategoryField = {
   [identifier: string]: {
     /**
-     * The name of this field for use in interfaces. Names longer than
-     * `20` characters may be elided in some interfaces.
+     * The name of this field for use in interfaces. Names longer than `20`
+     * characters may be elided in some interfaces.
      *
      * E.g.:
      * - `BCH Pledged`
      * - `Tokens Sold`
+     * - `Settlement Locktime`
      * - `Seat Number`,
      * - `IPFS Content Identifier`
      * - `HTTPS URL`
@@ -215,8 +213,8 @@ export type NftCategoryField = {
 
     /**
      * A string describing how this identity uses NFTs (for use in user
-     * interfaces). Descriptions longer than `160` characters may be
-     * elided in some interfaces.
+     * interfaces). Descriptions longer than `160` characters may be elided in
+     * some interfaces.
      *
      * E.g.:
      * - `The BCH value pledged at the time this receipt was issued.`
@@ -226,31 +224,30 @@ export type NftCategoryField = {
     description?: string;
 
     /**
-     * The expected encoding of this field when read from the parsing
-     * altstack (see `token.nft.parse`). All encoding definitions must
-     * have a `type`, and some encoding definitions allow for additional
-     * hinting about display strategies in clients.
+     * The expected encoding of this field when read from the parsing altstack
+     * (see {@link ParsableNftCollection}). All encoding definitions must have a
+     * `type`, and some encoding definitions allow for additional hinting about
+     * display strategies in clients.
      *
      * Encoding types may be set to `binary`, `boolean`, `hex`, `number`,
      * or `utf8`:
      *
-     * - `binary` types should be displayed as binary literals (e.g.
-     * `0b0101`)
-     * - `boolean` types should be displayed as `true` if exactly `0x01`
-     * or `false` if exactly `0x00`. If a boolean value does not match one
-     * of these values, clients should represent the NFT as unable to be
-     * parsed (e.g. simply display the full `commitment`).
+     * - `binary` types should be displayed as binary literals (e.g. `0b0101`)
+     * - `boolean` types should be displayed as `true` if exactly `0x01` or
+     * `false` if exactly `0x00`. If a boolean value does not match one of these
+     * values, clients should represent the NFT as unable to be parsed
+     * (e.g. simply display the full `commitment`).
      * - `hex` types should be displayed as hex literals (e.g.`0xabcd`).
      * - `https-url` types are percent encoded with the `https://` prefix
      * omitted; they may be displayed as URIs or as activatable links.
-     * - `ipfs-cid` types are binary-encoded IPFS Content Identifiers;
-     * they may be displayed as URIs or as activatable links.
-     * - `locktime` types are `OP_TXLOCKTIME` results: integers from `0`
-     * to `4294967295` (inclusive) where values less than `500000000` are
-     * understood to be a block height (the current block number in the
-     * chain, beginning from block `0`), and values greater than or equal
-     * to `500000000` are understood to be a Median Time Past (BIP113)
-     * UNIX timestamp. (Note, sequence age is not currently supported.)
+     * - `ipfs-cid` types are binary-encoded IPFS Content Identifiers; they may
+     * be displayed as URIs or as activatable links.
+     * - `locktime` types are `OP_TXLOCKTIME` results: integers from `0` to
+     * `4294967295` (inclusive) where values less than `500000000` are
+     * understood to be a block height (the current block number in the chain,
+     * beginning from block `0`), and values greater than or equal to
+     * `500000000` are understood to be a Median Time Past (BIP113) UNIX
+     * timestamp. (Note, sequence age is not currently supported.)
      * - `number` types should be displayed according the their configured
      * `decimals` and `unit` values.
      * - `utf8` types should be displayed as utf8 strings.
@@ -270,19 +267,20 @@ export type NftCategoryField = {
           type: 'number';
 
           /**
-           * The `aggregate` property indicates that aggregating this
-           * field from multiple NFTs is desirable in user interfaces. For
-           * example, for a field named `BCH Pledged` where `aggregate` is
-           * `add`, the client can display a `Total BCH Pledged` in any
-           * user interface listing more than one NFT.
+           * The `aggregate` property indicates that aggregating this field from
+           * multiple NFTs is desirable in user interfaces. For example, for a
+           * field named `BCH Pledged` where `aggregate` is `add`, the client
+           * can display a `Total BCH Pledged` in any user interface listing
+           * more than one NFT.
            *
-           * If specified, clients should aggregate the field from all
-           * NFTs within a view (e.g. NFTs held by a single wallet, NFTs
-           * existing in a single transaction's outputs, etc.) using the
-           * specified operation. Note, while aggregation could be
-           * performed using any commutative operation – multiplication,
-           * bitwise AND, bitwise OR, and bitwise XOR, etc. – only `add`
-           * is currently supported.
+           * If specified, clients should aggregate the field from all NFTs, of
+           * all NFT types within the category, within a particular view (e.g.
+           * NFTs held by a single wallet, NFTs existing in a single
+           * transaction's outputs, etc.) using the specified operation.
+           *
+           * Note, while aggregation could be performed using any commutative
+           * operation – multiplication, bitwise AND, bitwise OR, bitwise XOR,
+           * etc. – only `add` is currently supported.
            */
           aggregate?: 'add';
 
@@ -290,42 +288,142 @@ export type NftCategoryField = {
            * An integer between `0` and `18` (inclusive) indicating the
            * divisibility of the primary unit of this token field.
            *
-           * This is the number of digits that can appear after the
-           * decimal separator in amounts. For a field with a `decimals`
-           * of `2`, a value of `123456` should be displayed as `1234.56`.
+           * This is the number of digits that can appear after the decimal
+           * separator in amounts. For a field with a `decimals` of `2`, a value
+           * of `123456` should be displayed as `1234.56`.
            *
            * If omitted, defaults to `0`.
            */
           decimals?: number;
 
           /**
-           * The unit in which this field is denominated, taking the
-           * `decimals` value into account. If representing fungible token
-           * amount, this will often be the symbol of the represented
-           * token category.
+           * The unit in which this field is denominated, taking the `decimals`
+           * value into account. If representing fungible token amount, this
+           * will often be the symbol of the represented token category.
            *
            * E.g. `BCH`, `sats`, `AcmeUSD`, etc.
            *
-           * If not provided, clients should not represent this field as
-           * having a unit beyond the field's `name`.
+           * If not provided, clients should not represent this field as having
+           * a unit beyond the field's `name`.
            */
           unit?: string;
         };
     /**
-     * A mapping of identifiers to URIs associated with this NFT field.
-     * URI identifiers may be widely-standardized or registry-specific.
-     * Values must be valid URIs, including a protocol prefix (e.g.
-     * `https://` or `ipfs://`). Clients are only required to support
-     * `https` and `ipfs` URIs, but any scheme may be specified.
+     * A mapping of identifiers to URIs associated with this NFT field. URI
+     * identifiers may be widely-standardized or registry-specific. Values must
+     * be valid URIs, including a protocol prefix (e.g. `https://` or
+     * `ipfs://`). Clients are only required to support `https` and `ipfs` URIs,
+     * but any scheme may be specified.
      */
     uris?: URIs;
 
     /**
-     * A mapping of NFT field extension identifiers to extension
-     * definitions. {@link Extensions} may be widely standardized or
-     * application-specific.
+     * A mapping of NFT field extension identifiers to extension definitions.
+     * {@link Extensions} may be widely standardized or application-specific.
      */
     extensions?: Extensions;
+  };
+};
+
+/**
+ * Interpretation information for a collection of sequential NFTs, a collection
+ * in which each NFT includes only a sequential identifier within its on-chain
+ * commitment. Note that {@link SequentialNftCollection}s differ from
+ * {@link ParsableNftCollection}s in that sequential collections lack a
+ * parsing `bytecode` with which to inspect each NFT commitment: the type of
+ * each NFT is indexed by the full contents its commitment (interpreted as a
+ * positive VM integer in user interfaces).
+ */
+export type SequentialNftCollection = {
+  /**
+   * A mapping of each NFT commitment (typically, a positive integer encoded as
+   * a VM number) to metadata for that NFT type in this category.
+   */
+  types: {
+    /**
+     * Interpretation information for each type of NFT within the token
+     * category, indexed by commitment hex. For sequential NFTs, the on-chain
+     * commitment of each NFT is interpreted as a VM number to reference its
+     * particular NFT type in user interfaces. Issuing a sequential NFT with a
+     * negative or invalid VM number is discouraged, but clients may render the
+     * commitment of such NFTs in hex-encoded form, prefixed with `X`.
+     */
+    [commitmentHex: string]: NftType;
+  };
+};
+
+/**
+ * Interpretation information for a collection of parsable NFTs, a collection
+ * in which each NFT may include additional metadata fields beyond a sequential
+ * identifier within its on-chain commitment. Note that
+ * {@link ParsableNftCollection}s differ from {@link SequentialNftCollection}s
+ * in that parsable collections require a parsing `bytecode` with which to
+ * inspect each NFT commitment: the type of each NFT is indexed by the
+ * hex-encoded contents the bottom item on the altstack following the evaluation
+ * of the parsing bytecode.
+ */
+export type ParsableNftCollection = {
+  /**
+   * A segment of hex-encoded Bitcoin Cash VM bytecode that parses UTXOs
+   * holding NFTs of this category, identifies the NFT's type within the
+   * category, and returns a list of the NFT's field values via the
+   * altstack. If undefined, this NFT Category includes only sequential NFTs,
+   * with only an identifier and no NFT fields encoded in each NFT's
+   * on-chain commitment.
+   *
+   * The parse `bytecode` is evaluated by instantiating and partially
+   * verifying a standardized NFT parsing transaction:
+   * - version: `2`
+   * - inputs:
+   *   - 0: Spends the UTXO containing the NFT with an empty
+   *   unlocking bytecode and sequence number of `0`.
+   *   - 1: Spends index `0` of the empty hash outpoint, with locking
+   *   bytecode set to `parse.bytecode`, unlocking bytecode `OP_1`
+   *   (`0x51`) and sequence number `0`.
+   * - outputs:
+   *   - 0: A locking bytecode of OP_RETURN (`0x6a`) and value of `0`.
+   * - locktime: `0`
+   *
+   * After input 1 of this NFT parsing transaction is evaluated, if the
+   * resulting stack is not valid (a single "truthy" element remaining on
+   * the stack) – or if the altstack is empty – parsing has failed and
+   * clients should represent the NFT as unable to be parsed (e.g. simply
+   * display the full `commitment` as a hex-encoded value in the user
+   * interface).
+   *
+   * On successful parsing evaluations, the bottom item on the altstack
+   * indicates the type of the NFT according to the matching definition in
+   * `types`. If no match is found, clients should represent the NFT as
+   * unable to be parsed.
+   *
+   * For example: `00d2517f7c6b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT
+   * OP_SWAP OP_TOALTSTACK OP_TOALTSTACK) splits the commitment after 1 byte,
+   * pushing the first byte to the altstack as an NFT type identifier and the
+   * remaining segment of the commitment as the first NFT field value.
+   *
+   * If undefined (in a {@link SequentialNftCollection}), this field could be
+   * considered to have a default value of `00d26b` (OP_0 OP_UTXOTOKENCOMMITMENT
+   * OP_TOALTSTACK), which takes the full contents of the commitment as a fixed
+   * type index. As such, each index of the NFT category's `types` maps a
+   * precise commitment value to the metadata for NFTs with that particular
+   * commitment. E.g. an NFT with an empty commitment (VM number 0) maps to
+   * `types['']`, a commitment of `01` (hex) maps to `types['01']`, etc. This
+   * pattern is used for collections of sequential NFTs.
+   */
+  bytecode: string;
+  /**
+   * A mapping of hex-encoded values to definitions of possible NFT types
+   * in this category.
+   */
+  types: {
+    /**
+     * A definitions for each type of NFT within the token category. Parsable
+     * NFT types are indexed by the hex-encoded value of the bottom altstack
+     * item following evaluation of `NftCategory.parse.bytecode`. The remaining
+     * altstack items are mapped to NFT fields according to the `fields`
+     * property of the matching NFT type.
+     */
+    [bottomAltstackHex: string]: NftType;
   };
 };
 
@@ -351,6 +449,9 @@ export type NftCategory = {
   /**
    * A mapping of field identifier to field definitions for the data fields
    * that can appear in NFT commitments of this category.
+   *
+   * Categories including only sequential NFTs (where `parse.bytecode` is
+   * undefined) should omit `fields` (or set to `undefined`).
    */
   fields?: NftCategoryField;
 
@@ -364,65 +465,7 @@ export type NftCategory = {
    * Parsing instructions are provided in the `bytecode` property, and the
    * results are interpreted using the `types` property.
    */
-  parse: {
-    /**
-     * A segment of hex-encoded Bitcoin Cash VM bytecode that parses UTXOs
-     * holding NFTs of this category, identifies the NFT's type within the
-     * category, and returns a list of the NFT's field values via the
-     * altstack.
-     *
-     * The parse `bytecode` is evaluated by instantiating and partially
-     * verifying a standardized NFT parsing transaction:
-     * - version: `2`
-     * - inputs:
-     *   - 0: Spends the UTXO containing the NFT with an empty
-     *   unlocking bytecode and sequence number of `0`.
-     *   - 1: Spends index `0` of the empty hash outpoint, with locking
-     *   bytecode set to `parse.bytecode`, unlocking bytecode `OP_1`
-     *   (`0x51`) and sequence number `0`.
-     * - outputs:
-     *   - 0: A locking bytecode of OP_RETURN (`0x6a`) and value of `0`.
-     * - locktime: `0`
-     *
-     * After input 1 of this NFT parsing transaction is evaluated, if the
-     * resulting stack is not valid (a single "truthy" element remaining on
-     * the stack) – or if the altstack is empty – parsing has failed and
-     * clients should represent the NFT as unable to be parsed (e.g. simply
-     * display the full `commitment` as a hex-encoded value in the user
-     * interface).
-     *
-     * On successful parsing evaluations, the bottom item on the altstack
-     * indicates the type of the NFT according to the matching definition in
-     * `types`. If no match is found, clients should represent the NFT as
-     * unable to be parsed.
-     *
-     * For example:
-     * - `00d26b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_TOALTSTACK) takes the full
-     * contents of the commitment as a fixed type; this can be used for
-     * collections of unique, "numbered" NFTs. (Commitments of `01`, `02`,
-     * `03`, etc.)
-     * - `00d2517f7c6b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_SWAP
-     * OP_TOALTSTACK OP_TOALTSTACK) splits the commitment after 1 byte,
-     * pushing the first byte to the altstack as an NFT type and the
-     * remaining segment of the commitment as the first NFT field value.
-     */
-    bytecode: string;
-
-    /**
-     * A mapping of hex-encoded values to definitions of possible NFT types
-     * in this category.
-     */
-    types: {
-      /**
-       * A definitions for each type of NFT within the token category. NFT
-       * types are indexed by the expected hex-encoded value of the bottom
-       * altstack item following evaluation of `token.nfts.parse.bytecode`.
-       * The remaining altstack items are mapped to NFT fields according to
-       * the `fields` property of the matching NFT type.
-       */
-      [bottomAltStackItemHex: string]: NftType;
-    };
-  };
+  parse: SequentialNftCollection | ParsableNftCollection;
 };
 
 /**

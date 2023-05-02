@@ -6,7 +6,7 @@
         Maintainer: Jason Dreyzehner
         Status: Draft
         Initial Publication Date: 2022-10-31
-        Latest Revision Date: 2022-04-13
+        Latest Revision Date: 2023-05-01
         Version: 2.0.0-draft
 
 <details>
@@ -19,7 +19,6 @@
 - [Benefits](#benefits)
 - [Technical Specification](#technical-specification)
 - [Rationale](#rationale)
-- [Prior Art & Alternatives](#prior-art--alternatives)
 - [Test Vectors](#test-vectors)
 - [Implementations](#implementations)
 - [Feedback & Reviews](#feedback--reviews)
@@ -49,7 +48,7 @@ Metadata registries use an extensible JSON schema, ensuring a baseline of compat
 
 ### Interpretation of NFT Commitments
 
-Registries can encode structured information about NFT commitment APIs, allowing ecosystem software to parse and understand the contents of any NFT. This enables generalized user interfaces for all NFTs, and application-specific extensions can build on this NFT parsing infrastructure to enable richer experiences – for example:
+Registries can encode structured information about non-fungible token (NFT) commitment APIs, allowing ecosystem software to parse and understand the contents of any NFT. This enables generalized user interfaces for all NFTs, and application-specific extensions can build on this NFT parsing infrastructure to enable richer experiences – for example:
 
 - A table of the user's open orders for a decentralized exchange with sums for "Total Tokens for Sale" and "Total BCH Order Value".
 - A list of the user's active crowdfunding pledges with information on each campaign and a sum of "Total BCH Pledged".
@@ -325,7 +324,39 @@ Clients may use the `authchain` extension to rapidly update their records for a 
 
 ### Guidelines for Token Issuers
 
-If additional fungible tokens may be needed in the future, token issuers should initially mint an excess supply and hold them in the identity output with a [mutable token](https://github.com/bitjson/cashtokens#token-types) (using any `commitment` value) to indicate they are part of the [Reserved Supply](https://github.com/bitjson/cashtokens#reserved-supply). This enables light-client verification of the maximum possible [Circulating Supply](https://github.com/bitjson/cashtokens#circulating-supply).
+The following recommendations are made for issuers of CashTokens.
+
+#### Providing for Continued Issuance of Fungible Tokens
+
+If additional fungible tokens of a category may be needed in the future, token issuers should initially mint an excess supply (e.g. the maximum supply of `9223372036854775807`) and hold the unissued tokens in the identity output with a [mutable token](https://github.com/bitjson/cashtokens#token-types) (using any `commitment` value) to indicate they are part of the [Unissued/Reserved Supply](https://github.com/bitjson/cashtokens#reserved-supply). This enables continued issuance from the identity output while maintaining the ability for light clients to verify the maximum possible [Circulating Supply](https://github.com/bitjson/cashtokens#circulating-supply).
+
+#### Associating Information with NFTs
+
+Issuers of non-fungible tokens (NFTs) can associate icons, traits, and other information with each NFT via one of two general strategies:
+
+- **Sequential NFTs**: the on-chain commitments of the category's NFTs include only a positive integer identifier. All other metadata for each NFT is associated with the NFT's identifier by metadata registries. An `NftCategory` with an undefined `parse.bytecode` value uses sequential NFTs.
+- **Parsable NFTs**: the on-chain commitments of the category's NFTs directly include parsable metadata for each NFT. The procedure for identifying and parsing the meaning of each NFT type in the category is propagated by metadata registries. An `NftCategory` with a defined `parse.bytecode` value uses parsable NFTs.
+
+Where possible, NFT issuers should prefer to issue sequential NFTs unless the intended use case requires parsable NFTs. Sequential NFTs are more efficient than parsable NFTs, reducing the bandwidth and transaction fees required to transfer each NFT. Because all metadata beyond the NFT's identifier is stored off-chain and resolved using metadata registries, sequential NFTs have no meaningful limits on the composition or size their associated metadata. (Note, categories using sequential NFTs should not include any `NftCategory.fields` or `NftType.fields`.)
+
+Parsable NFTs encode up to 40 bytes of metadata in their on-chain commitment. Encoding this metadata in the on-chain commitment allows each NFT to convey authenticated information to on-chain contract systems and sparsely-connected, off-chain systems at the cost of a slight increase in required transaction fees and dust output values. Parsable NFTs can encode a wide variety of NFT **fields**, data shared by all NFTs of a particular type, e.g. `BCH Pledged`, `Tokens Sold`, `Settlement Locktime`, `Seat Number`, `IPFS Content Identifier`, `HTTPS URL`, etc. Like sequential NFTs, parsable NFTs may also have additional off-chain metadata associated with each NFT type in the category.
+
+Note that for both sequential and parsable NFTs, it's technically possible to create multiple NFTs with precisely the same commitment; these are sometimes called **semi-fungible tokens**. Often, token categories with parsable NFTs require support for these semi-fungible tokens (e.g. two pledge receipts for precisely the same BCH amount are mutually fungible), while sequential NFT use cases often require strict uniqueness. To guarantee uniqueness, token issuers may choose to either:
+
+- Issue all NFTs in one or a few initial minting transactions (thereafter burning any minting NFTs), or
+- Assign all minting NFTs for the token category to covenant contracts that enforce uniqueness in all future minting transactions.
+
+### Guidelines for Registry Publishers
+
+The following recommendations are made for publishers of Bitcoin Cash Metadata Registries, and this proposal includes [several example registries](./examples.md).
+
+#### Authentication of Static Data
+
+Registry publishers should ensure that URIs expected to reference remote, static data (e.g. `icon`, `icon-intro`, and other image or binary data) use either content-addressed `IPFS` URIs or `HTTPS` URIs referencing only domains trusted by or under the control of the registry publisher/identity. This ensures that static data remains available over time and prevents attacks in which other entities could replace static data with ambiguous, misleading, or malicious content.
+
+#### Publication of Static Data
+
+Where possible, registry publishers should publish static data using content-addressed `IPFS` URIs; this enables caching and deduplication across registries, more resilient resource resolution, and data integrity guarantees. Static data should be either individually-addressed or archive-addressed within an archive containing only static data required by that registry, that is, files not referenced by the registry and the registry file itself should be excluded from the archive.
 
 ### Guidelines for Client Software
 
@@ -359,9 +390,55 @@ Each `IdentitySnapshot` is assigned to a timestamp at which the snapshot began o
 
 Note that while it is technically possible for registries to encode two overlapping migrations, clients should only attempt to use information from the latest migration (between the latest and previous snapshots when timestamps are lexicographically sorted).
 
+#### Rendering NFTs in User Interfaces
+
+Metadata registry entries for identities which incorporate non-fungible tokens (NFTs) should include an `NftCategory` definition that describes how clients may ascertain the meaning of NFTs in that category. There are [two general classifications of NFTs](#associating-information-with-nfts) distinguished by how metadata is associated with each NFT: **sequential NFTs** and **parsable NFTs**. An `NftCategory` where `parse.bytecode` is `undefined` uses sequential NFTs; those with a defined `parse.bytecode` use parsable NFTs.
+
+While some clients may support additional rendering standards for ecosystems like ticketing, access passes, crowdfunding, trading, gaming, digital art, and other application-specific verticals, a particular client is considered to fully support NFT rendering if the below, minimal rendering requirements for both **sequential NFTs** and **parsable NFTs** are supported.
+
+##### Sequential NFTs
+
+Sequential NFTs belong to an `NftCategory` where `parse.bytecode` is undefined. It is not necessary to evaluate any parsing bytecode to derive the meaning of sequential NFTs: each commitment value is a VM number mapping directly to an index of `parse.types`.
+
+At minimum, user interfaces displaying sequential NFTs should provide for rendering each NFT's `name`, icon (`uris.icon`), `description`, and `web` URI (`uris.web`). It must also be possible to list and either copy or activate all other provided URIs, though clients are not expected to provide special handling for any particular URI identifiers beyond `icon` and `web` (see [URI Identifiers](#uri-identifiers)).
+
+It is technically possible for NFTs in sequential NFT categories to contain commitments that decode to negative or invalid VM numbers; these NFTs should be considered to have a `name` equivalent to their [NFT ticker symbol](#nft-ticker-symbols) and no icon or other metadata.
+
+##### Parsable NFTs
+
+Parsable NFTs belong to an `NftCategory` where `parse.bytecode` is defined. To derive the meaning of a parsable NFT, clients evaluate each NFT using `parse.bytecode`, a segment of hex-encoded Bitcoin Cash VM bytecode that parses UTXOs holding NFTs of this category, identifies the NFT's type within the category (among `parse.types`), and returns a list of the NFT's field values via the altstack. Evaluation results are deterministic for the life of each UTXO, so clients can permanently store parsed metadata alongside the UTXO. See [the documentation for `ParsableNftCollection`](./bcmr-v2.schema.ts#ParsableNftCollection) for details.
+
+Each type of parsable NFT (as specified in `parse.types`) incorporates a particular set of **fields** for that NFT type, e.g. `BCH Pledged`, `Tokens Sold`, `Settlement Locktime`, etc. (see [Associating Information with NFTs](#associating-information-with-nfts) for details); these fields can be modeled as columns in a table of NFTs of that type.
+
+At a minimum, user interfaces displaying parsable NFTs should provide for rendering each NFT type as a grouping of NFTs (e.g. as independent tables), where the assigned fields are displayed within each grouping (e.g. as table columns). The contents of each field should be rendered according to the fields specified `encoding`, see the [the documentation for `NftCategoryField`](./bcmr-v2.schema.ts#NftCategoryField) for details.
+
+#### NFT Ticker Symbols
+
+Where appropriate, user interfaces may indicate a ticker symbol for any NFT. Like ticker symbols for fungible tokens, NFT ticker symbols use only capital letters, numbers, and hyphens (regular expression: `/^[-A-Z0-9]+$/`). The ticker symbol for a particular NFT is the concatenation of it's `TokenCategory.symbol`, a hyphen (`-`), and the NFT's **type symbol**.
+
+For sequential NFTs, each NFT's type symbol is the positive integer encoded (as a VM number) in that NFT's on-chain commitment. For example, an NFT of sequential NFT category `XAMPL` with commitment `0x64`/`100` has the ticker symbol `XAMPL-100`. While possible, issuing a sequential NFT with a negative or invalid VM number is generally discouraged; The type symbol of such non-numeric sequential NFTs should use the hex-encoded form, prefixed with `X` (e.g. the type symbol for commitment `0x81`/`-1` is `X81`, producing a ticker symbol of `XAMPL-X81`).
+
+For parsable NFTs, each NFT's type symbol is determined by the value of the bottom altstack item following evaluation of `NftCategory.parse.bytecode`; if the value is a positive VM number, that integer is the type symbol, otherwise, the value is hex-encoded and prefixed with `X`. For example, an NFT of parsable NFT category `XAMPL` matching the `NftType` at `NftCategory.parse.types` index of `7f` (VM number `127`) should be listed as `XAMPL-127`, while an NFT matching the index of `ff` (VM number `-127`) should be listed as `XAMPL-XFF`.
+
+## Rationale
+
+This section documents design decisions made in this specification.
+
+### Use of Absolute URIs
+
+This standard [requires all URIs to be fully qualified](#uri-identifiers), including protocol prefix (e.g. `https://` or `ipfs://`). This requirement simplifies client implementations and eliminates several authentication vulnerabilities.
+
+Alternatively, this proposal could allow for relative `HTTPS` URIs, reducing the file size and complexity of some registries. However, this change would also entail several significant tradeoffs:
+
+- **Resolution ambiguity**: resolution of a relative URI is typically based on the URI of the referencing resource; this would prevent a registry from maintaining its semantic meaning when downloaded or relocated.
+- **Tight coupling with protocol**: relative URIs typically exclude the URI protocol identifier (`https://`, `ipfs://`, etc.) as well as the path to the resolver's working directory. A relative URI scheme would require standardizing expected client handling of relative URIs for both `HTTPS` and `IPFS`, and introduce additional ambiguity in the use of other protocols.
+- **Inconsistency across registries**: while snapshots containing absolute URIs can safely be copied between registries (e.g. by pulling changes made by a token issuer into an embedded registry), relative URIs require special handling in both publisher updates and client verification.
+
+Note, many use cases that would seem to benefit from relative URIs – like art collections in which many graphics share a single fully qualified domain name (e.g. `https://example.com/1.svg`, `https://example.com/2.svg`, etc.) – are better implemented with content-addressed `IPFS` URIs (see [Publication of Static Data](#publication-of-static-data)). Content-addressed URIs combine resource resolution with data integrity, ensuring that changes in the resolved data must be accompanied by an update to the referencing registry (e.g. adding a new snapshot to the collection's identity). Additionally, clients can safely use previously-cached, content-addressed resources following registry updates, as such resources are guaranteed to have remained unchanged.
+
 ## Test Vectors
 
-_(pending initial implementations)_
+A variety of [Bitcoin Cash Metadata Registry examples](./examples.md) are provided in this proposal.
 
 ## Implementations
 
@@ -374,6 +451,10 @@ _(pending initial implementations)_
 - [CHIP-BCMR Issues](https://github.com/bitjson/chip-bcmr/issues)
 - [`CHIP-BCMR: Bitcoin Cash Metadata Registries` - Bitcoin Cash Research](https://bitcoincashresearch.org/t/chip-bcmr-bitcoin-cash-metadata-registries/942)
 
+## Acknowledgements
+
+Thank you to [Mathieu Geukens](https://github.com/mr-zwets), [bitcoincashautist](https://github.com/A60AB5450353F40E), and [Tom Zander](https://github.com/zander) for reviewing and contributing improvements to this proposal, providing feedback, and promoting consensus among stakeholders.
+
 ## Changelog
 
 This section summarizes the evolution of this document.
@@ -384,6 +465,8 @@ This section summarizes the evolution of this document.
   - Simplified registry's conception of time ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Standardized parsing transaction to eliminate undefined behavior ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Converted `identities` from an array to an object ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Expanded guidelines for issuers and clients
+  - Added example registries
 - **v1.0.0 – 2022-10-31** ([`5b24b0ec`](https://github.com/bitjson/chip-bcmr/blob/5b24b0ec93cf9316222ab2ea2e2ffe8a9f390b12/readme.md))
   - Initial publication
 
