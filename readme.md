@@ -218,7 +218,11 @@ At any moment in time, only one snapshot is considered "current" for an identity
 
 Each identity in a metadata registry is represented by an `IdentityHistory` data structure, a map of ISO timestamps to [`IdentitySnapshot`](#identitysnapshots)s. `IdentityHistory` data structures allow clients to construct a timeline of the evolution of a particular identity, helping users recognize and disambiguate identities that have changed significantly since the user last interacted with that identity.
 
-Typically, the current identity information is the latest record when the keys (timestamps) are lexicographically sorted, but in cases where a [planned migration](#handling-identity-snapshot-migrations) has not yet begun (the snapshot's timestamp has not been reached), the immediately preceding record is considered the current identity.
+The current identity information is the snapshot associated with the latest timestamp reached. If no timestamp has yet been reached, the snapshot of the oldest timestamp is considered current. Future-dated timestamps indicate [planned migrations](#handling-identity-snapshot-migrations).
+
+This strategy allows wallets and other user interfaces to offer better experiences when an identity is rebranded, a token redenominated, or other important metadata is modified in a coordinated update. For example, a wallet may warn token holders of a forthcoming rebranding of fungible tokens they hold; after the change, the wallet may continue to offer prominent interface hints that the rebranded token identity was recently updated.
+
+Timestamps may be order by time via lexicographical sort. For determinism, it is recommended that implementations sort from newest to oldest in exported registry JSON files.
 
 #### Tags
 
@@ -253,6 +257,7 @@ The following optional URI identifiers are standardized:
 | `chat`       | A URI identifying a community chatroom for this identity or tag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `forum`      | A URI identifying a community forum for this identity or tag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `icon-intro` | A URI pointing to a square, animated icon that represents this identity or tag. The animation should play once (without looping) to introduce the static icon. Transparency is supported, and icons should be suitable for display against both light and dark backgrounds. Acceptable formats are `SVG`, `AVIF`, or `WebP`. For raster formats, the recommended size is `400px` by `400px`.                                                                                                                                                                                                                                                                                             |
+| `migrate`    | (Standardized only for `IdentitySnapshot`s.) A URI identifying a resource with information about the change resulting in this snapshot. For snapshots in which `token.category` is modified (e.g. a re-issuance, vote, payout, dividend, etc.), this resource should provide guidance about how holders of the previous token category may exchange tokens for those of the new category.                                                                                                                                                                                                                                                                                                |
 | `registry`   | The primary-source registry URI for this identity or tag. For DNS-resolved registries, this is the full, [Well-Known URI](#well-known-uri) from which the registry can be downloaded. For chain-resolved registries and other identities, this is the full URI of the latest registry published on-chain by the identity. For tags, The `registry` identifier should only be used when a tag represents a formal designation by a particular authority (certification, membership, ownership, etc.); when present, this URI points to the canonical registry published by that authority. Tags without this identifier are assumed to be created and applied by the containing registry. |
 | `support`    | A URI offering user-facing support for this identity or tag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
@@ -326,6 +331,16 @@ Clients may use the `authchain` extension to rapidly update their records for a 
 
 The following recommendations are made for issuers of CashTokens.
 
+#### Ticker Symbol Selection
+
+A ticker `symbol` must be associated with any identity for which `token` information is specified. Symbols must contain only capital letters, numbers, and hyphens (regular expression: `^[A-Z0-9]+[-A-Z0-9]*$`).
+
+Within each ticker symbol, the **base symbol** is the segment of capital letters and numbers occurring prior to the first hyphen (`-`). Base symbols should be globally unique among unrelated assets, and it is recommended that base symbols be 4 to 6 characters in length (inclusive) for identities of fungible tokens or 6 to 13 characters in length (inclusive) for identities associated primarily with an NFT collection (see [Symbol Length Recommendations](#symbol-length-recommendations) for details).
+
+Base symbols may be shared by multiple classes of a particular asset, e.g. classes of stock (e.g. `XAMPL-A`, `XAMPL-B`), pre-dividend and post-dividend tokens (e.g. `XAMPL-23Q1`, `XAMPL-23Q2`), multiple types of non-fungible tokens within a category (e.g. `XAMPL-20231115-C-012345678`, `CAMPAIGN2023-21-100`), etc. While assets sharing a base symbol are not interchangeable, user interfaces may consolidate them into unified views by base symbol to simplify user experiences.
+
+Token issuers should be aware that ticker symbols are not assigned by a centralized authority. To be included in commonly-trusted registries, token issuers must achieve widespread consensus around their chosen symbol; assets with issuer-chosen symbols that are unclear or misleading may instead come to be identified by the wider ecosystem using an alternative symbol.
+
 #### Providing for Continued Issuance of Fungible Tokens
 
 If additional fungible tokens of a category may be needed in the future, token issuers should initially mint an excess supply (e.g. the maximum supply of `9223372036854775807`) and hold the unissued tokens in the identity output with a [mutable token](https://github.com/bitjson/cashtokens#token-types) (using any `commitment` value) to indicate they are part of the [Unissued/Reserved Supply](https://github.com/bitjson/cashtokens#reserved-supply). This enables continued issuance from the identity output while maintaining the ability for light clients to verify the maximum possible [Circulating Supply](https://github.com/bitjson/cashtokens#circulating-supply).
@@ -370,11 +385,11 @@ It is recommended that all supporting client software include at least one [embe
 
 When adding or updating a registry, clients should perform basic validation of the newly-received registry:
 
-1. Using the client's existing registries, build a mapping of identity `token.symbol` values to known authbases.
-2. Iterating through the newly-received registry, verify that each new `token.symbol`:
-   1. Passes token symbol validation. (Regular expression: `/^[-A-Z0-9]+$/`)
+1. Using the client's existing registries, build a mapping of identity `TokenCategory.symbol` values to known authbases.
+2. Iterating through the newly-received registry, verify that each new `TokenCategory.symbol`:
+   1. Passes token symbol validation. (Regular expression: `^[A-Z0-9]+[-A-Z0-9]*$`)
    2. Maps to the same authbase in existing registries as is represented in the new registry.
-   3. Does not appear on the client's list of reserved token symbols.
+   3. Has a globally unique [base symbol](#ticker-symbol-selection) and does not appear on the client's list of reserved token symbols.
 
 If this validation fails, clients should either:
 
@@ -384,11 +399,27 @@ If this validation fails, clients should either:
 
 #### Handling Identity Snapshot Migrations
 
-Each `IdentitySnapshot` is assigned to a timestamp at which the snapshot began or will begin to take effect. If no `IdentitySnapshot.migrated` timestamp is provided, the snapshot's migration is considered **instant**: the new information should be displayed immediately after the assigned timestamp has been reached. If `IdentitySnapshot.migrated` is provided, the snapshot's migration is considered **gradual**: the migration period begins at the `IdentitySnapshot`'s initial timestamp and completes upon reaching the `IdentitySnapshot.migrated` timestamp. Clients are encouraged to surface both kinds of migrations to users.
+Each `IdentitySnapshot` within an `IdentityHistory` is assigned to a timestamp at which the snapshot began or will begin to take effect. If the snapshot does not include a `migrated` timestamp, the migration is considered **instant**: the new information should be displayed immediately after the assigned timestamp has been reached. If `IdentitySnapshot.migrated` is provided, the snapshot's migration is considered **gradual**: the migration period begins at the `IdentitySnapshot`'s initial timestamp and completes upon reaching the `migrated` timestamp.
 
-**Where possible, clients should notify users about upcoming and recent migrations that impact in-use identities.**
+**Where possible, clients should notify users about upcoming and recent migrations that impact in-use identities.** In particular, changes to `name`, `uris.icon`, and token `category`, `symbol`, and `decimals` settings should be clearly highlighted for identities and assets relevant to the user.
 
-Note that while it is technically possible for registries to encode two overlapping migrations, clients should only attempt to use information from the latest migration (between the latest and previous snapshots when timestamps are lexicographically sorted).
+Note that while it is technically possible for registries to encode two overlapping migrations, clients should only attempt to use information from the latest migration (between the current and previous snapshot).
+
+#### Rendering Ticker Symbols
+
+All identities with `token` information must include a `category` and ticker `symbol` to label that identity's tokens in clients (`decimals` may optionally be included and defaults to `0`).
+
+Like other properties of an identity, token `category`, `symbol`, and `decimals` may all change over time as an asset is rebranded, re-denominated, re-issued, or migrated for technical reasons (e.g. on-chain voting, payouts, [dividend issuance](https://bitcoincashresearch.org/t/higher-level-token-standards-using-cashtokens/912/7), etc.). To handle these circumstances, clients should map symbols to tokens using the following strategy:
+
+1. Create a mapping of token categories to category metadata (`name`, `symbol`, etc.) given all metadata across all trusted registries; this includes previous identity snapshots in which an identity's `token.category` had a different value than the current snapshot.
+2. Map the category of the token(s) to be identified to matching metadata.
+   1. **Token `symbol`s from current snapshots should be truncated to remove content after the base symbol** (`symbol` content including and following the first hyphen).
+   2. Token `symbol`s from previous snapshots should be rendered without truncation.
+   3. If the wallet holds tokens of both the current snapshot and previous snapshots, the two groups of assets should be distinguished, e.g. `XAMPL` (`XAMPL-23Q2` from a current snapshot) and `XAMPL-23Q1` (tokens from a previous snapshot and not yet redeemed for a payout and the new `XAMPL-23Q2` tokens).
+
+Note that collections of NFTs should also be grouped in multi-asset user interfaces by these computed `symbol`s – NFTs of categories associated with current snapshots may be grouped by their base symbol (e.g. `XAMPL`), while NFTs of categories associated with older snapshots should be grouped separately by their fully-qualified `symbol` (e.g. `XAMPL-ISSUE1`).
+
+For a summary of expected symbol length ranges, see [Symbol Length Recommendations](#symbol-length-recommendations).
 
 #### Rendering NFTs in User Interfaces
 
@@ -414,11 +445,26 @@ At a minimum, user interfaces displaying parsable NFTs should provide for render
 
 #### NFT Ticker Symbols
 
-Where appropriate, user interfaces may indicate a ticker symbol for any NFT. Like ticker symbols for fungible tokens, NFT ticker symbols use only capital letters, numbers, and hyphens (regular expression: `/^[-A-Z0-9]+$/`). The ticker symbol for a particular NFT is the concatenation of it's `TokenCategory.symbol`, a hyphen (`-`), and the NFT's **type symbol**.
+Where appropriate, user interfaces may indicate a ticker symbol for any NFT. If a particular NFT has no defined `name`, the name should default to the NFT's ticker symbol.
 
-For sequential NFTs, each NFT's type symbol is the positive integer encoded (as a VM number) in that NFT's on-chain commitment. For example, an NFT of sequential NFT category `XAMPL` with commitment `0x64`/`100` has the ticker symbol `XAMPL-100`. While possible, issuing a sequential NFT with a negative or invalid VM number is generally discouraged; The type symbol of such non-numeric sequential NFTs should use the hex-encoded form, prefixed with `X` (e.g. the type symbol for commitment `0x81`/`-1` is `X81`, producing a ticker symbol of `XAMPL-X81`).
+Like ticker symbols for fungible tokens, NFT ticker symbols use only capital letters, numbers, and hyphens; unless associated with a shorter [base symbol](#ticker-symbol-selection) from a fungible token category, **it is recommended that non-fungible token collections use a base symbol between 6 and 13 characters in length, inclusive** (see [Symbol Length Recommendations](#symbol-length-recommendations)).
 
-For parsable NFTs, each NFT's type symbol is determined by the value of the bottom altstack item following evaluation of `NftCategory.parse.bytecode`; if the value is a positive VM number, that integer is the type symbol, otherwise, the value is hex-encoded and prefixed with `X`. For example, an NFT of parsable NFT category `XAMPL` matching the `NftType` at `NftCategory.parse.types` index of `7f` (VM number `127`) should be listed as `XAMPL-127`, while an NFT matching the index of `ff` (VM number `-127`) should be listed as `XAMPL-XFF`.
+The full ticker symbol for a particular NFT is the concatenation of it's `TokenCategory.symbol`, a hyphen (`-`), and the **NFT ticker symbol encoding** of the NFT type's key within `NftCategory.parse.types`: if the key can be minimally-encoded as a positive VM number, the resulting number, otherwise, the hex-encoded key prefixed with `X` (see [Sequential NFT Commitment Encoding](#sequential-nft-commitment-encoding)). Test vectors are provided below given a category ticker symbol of `XAMPL`.
+
+| NFT Type Key                       | NFT Ticker Symbol |
+| ---------------------------------- | ----------------- |
+| `''` (empty string, VM number `0`) | `XAMPL-0`         |
+| `01` (VM number `1`)               | `XAMPL-1`         |
+| `64` (VM number `100`)             | `XAMPL-100`       |
+| `7f` (VM number `127`)             | `XAMPL-127`       |
+| `80` (VM number `-0`)              | `XAMPL-X80`       |
+| `81` (VM number `-1`)              | `XAMPL-X81`       |
+| `ff` (VM number `-127`)            | `XAMPL-XFF`       |
+| `8000` (VM number `128`)           | `XAMPL-128`       |
+| `ff7f` (VM number `32767`)         | `XAMPL-32767`     |
+| `ff7f` (VM number `32767`)         | `XAMPL-32767`     |
+| `ff80` (VM number `-255`)          | `XAMPL-XFF80`     |
+| `ffff` (VM number `-32767`)        | `XAMPL-XFFFF`     |
 
 ## Rationale
 
@@ -435,6 +481,36 @@ Alternatively, this proposal could allow for relative `HTTPS` URIs, reducing the
 - **Inconsistency across registries**: while snapshots containing absolute URIs can safely be copied between registries (e.g. by pulling changes made by a token issuer into an embedded registry), relative URIs require special handling in both publisher updates and client verification.
 
 Note, many use cases that would seem to benefit from relative URIs – like art collections in which many graphics share a single fully qualified domain name (e.g. `https://example.com/1.svg`, `https://example.com/2.svg`, etc.) – are better implemented with content-addressed `IPFS` URIs (see [Publication of Static Data](#publication-of-static-data)). Content-addressed URIs combine resource resolution with data integrity, ensuring that changes in the resolved data must be accompanied by an update to the referencing registry (e.g. adding a new snapshot to the collection's identity). Additionally, clients can safely use previously-cached, content-addressed resources following registry updates, as such resources are guaranteed to have remained unchanged.
+
+### Sequential NFT Commitment Encoding
+
+To improve interoperability between off-chain and on-chain use cases, this standard recommends that sequential NFTs use VM number encoding within commitments, [mapping commitment contents to NFT ticker symbols with numeric suffixes](#nft-ticker-symbols). This recommendation ensures that contracts can [read and operate on sequential NFT commitment values](https://github.com/bitjson/chip-bcmr/pull/8#issuecomment-1534127586). For example, a sequential NFT minting covenant can enforce uniqueness across all NFTs in a collection by simply incrementing a counter (`OP_1ADD`) within a covenant-tracking minting NFT, inserting the new value into the newly-minted sequential NFT. Additionally, as parsable NFTs are likely to prefix many NFT types with VM Number `0` through `16`, this convention is likely to improve consistency between ticker symbols of sequential NFTs and parsable NFTs (see [Token API single-byte bias](https://github.com/bitjson/jedex#demonstrated-concepts)).
+
+### Symbol Length Recommendations
+
+To create greater certainty around user interface requirements and capabilities, this standard recommends that:
+
+- [base symbols for fungible tokens](#ticker-symbol-selection) be between 4 and 6 characters in length,
+- base symbols for token categories dedicated to non-fungible tokens (NFTs) be [between 6 and 13 characters in length](#nft-ticker-symbols),
+- and clients [accommodate up to 26 characters for full symbols](#rendering-ticker-symbols) in asset-specific views.
+
+The 4-character minimum recommended length for fungible tokens is derived from widespread usage in existing markets. Fewer than 50,000 unique 3-character base symbols can exist<sup>1</sup>, and most of these symbols are already in use across one or more existing markets. While issuers of these existing assets may migrate issuance to use fungible CashTokens and carry over their existing symbols, new issuers must usually select a base symbol with a length of at least 4 characters for global uniqueness.
+
+By establishing maximum recommended base symbol lengths, this standard ensures wider compatibility across user interfaces; base symbols remaining within this range have the maximum likelihood of being displayed without truncation in most user interfaces.
+
+The 6-character minimum recommended length for NFTs is chosen to reduce overlap with base symbols of fungible tokens (which can be expected to prefer 4 or 5-character base symbols). NFTs tend to be more specialized and less commonly used as exchange media, appearing in fewer trading pairs and user interfaces requiring symbol brevity. In fact, NFT base symbols are rarely used without full qualification, e.g. `XAMPL-2354`, `BRANDNAME-100`, etc. Given this fundamental difference from fungible tokens, longer base symbols tend to be advantageous for NFTs, where clarity and differentiation (e.g. in keyword search) are more valuable than brevity in character length. Following this recommendation, many NFT collections can be visually distinguished from fungible tokens purely on the basis of symbol length.
+
+The 13-character maximum recommended length for base symbols is derived from the minimum recommended length of fungible token base symbols and from the distribution of word lengths in the English language. In existing markets, relatively-long base symbols are commonly used to embed trading pairs. For example, `NAMEUSDEUR` might refer to an interest in `NAME` that earns a share in the profits of `NAME`'s `USD/EUR` market. For these use cases, a 13-character base symbol can accommodate a 5-character entity symbol associated with two other 4-character base symbols, e.g. `XAMPLCORNGOLD`. Additionally, a 13-character maximum base symbol best accommodates readable symbols in the english language; approximately 96.7% of English words occupy 13 characters or less, with rapidly diminishing improvement in coverage beyond 13 characters<sup>2</sup>.
+
+Finally, this standard advises clients to plan for adequate space in asset-specific user interfaces to render ticker symbols of up to 26 characters in length. This limit accommodates existing ticker symbol standards (e.g. Options Clearing Corporation's 21-character option symbols following the Options Symbology Initiative), allows for the maximum value sequential NFT with a 6-character base symbol (e.g. `XAMPL1-9223372036854775807`), and provides adequate space for a variety of future standards using a 6-character base symbol, a 1 character type indicator (e.g. put, call, limit, etc.), and two 8-character data elements (e.g. a date and strike price), each separated by hyphens (`-`).
+
+<details>
+<summary>Notes</summary>
+
+1. Maximum number of globally unique 3-character base symbols, where each character may be a capital letter or number: `(26+10)**3 = 46,656` (4-character base symbols: `(26+10)**4 = 1,679,616`; 5-character base symbols: `(26+10)**5 = 60,466,176`).
+2. As of 2023, 13 characters encompass approximately 96.7% of words in the American English `wordlist` on Debian: `awk '{ print length($0); }' /usr/share/dict/words | sort -n | uniq -c`. The distribution of word lengths yields significantly diminishing returns beyond 13 characters: 9 characters covers 67.9%, 10 characters covers 79.5%, 11 covers 88.0%, 12 covers 93.6%, 13 covers 96.7%, 14 covers 98.4%, 15 covers 99.3%, 16 covers 99.7%, 17 covers 99.8%, etc.
+
+</details>
 
 ## Test Vectors
 
@@ -466,7 +542,8 @@ This section summarizes the evolution of this document.
   - Standardized parsing transaction to eliminate undefined behavior ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Converted `identities` from an array to an object ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Expanded guidelines for issuers and clients
-  - Added example registries
+  - Defined NFT ticker symbols ([#8](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Added registry examples
 - **v1.0.0 – 2022-10-31** ([`5b24b0ec`](https://github.com/bitjson/chip-bcmr/blob/5b24b0ec93cf9316222ab2ea2e2ffe8a9f390b12/readme.md))
   - Initial publication
 

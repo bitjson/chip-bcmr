@@ -24,10 +24,24 @@ For more detail, see the [descriptions in the example](./examples/art-collection
 
 ## Decentralized Application
 
-The `decentralized-application.json` example demonstrates how a registry might specify the structure of NFTs used by a decentralized application.
+The [`decentralized-application.json` example](./examples/decentralized-application.json) demonstrates how a registry might specify the structure of NFTs used by a decentralized application.
 
 The registry includes only one identity, `Crowdfunding Example`, defined as authbase `89cad9e3e34280eb1e8bc420542c00a7fcc01002b663dbf7f38bceddf80e680c` with a matching token category ID.
 
 This decentralized application uses only one type of parsable NFT, `Pledge Receipt`, which itself contains only one field, `Pledge Value`. This field demonstrates the additional capabilities of the `number` encoding: clients are informed that `Pledge Value` can be aggregated (by addition) in views containing multiple NFTs to provide useful information to the user. For example, if the wallet holds two NFTs, one with a `Pledge Value` of `123456` and one of `654321`, the wallet can display a total of the user's pledges to this campaign in relevant user interfaces: `0.00777777 BCH`.
 
 For more detail, see the [descriptions in the example](./examples/decentralized-application.json).
+
+## Payouts or Dividends
+
+The [`payouts-or-dividends.json` example](./examples/payouts-or-dividends.json) demonstrates how a registry might publish information about fungible tokens that receive [on-chain payouts or dividends](https://bitcoincashresearch.org/t/higher-level-token-standards-using-cashtokens/912/7), either from off-chain activities (e.g. equity or debt instruments) or as part of an on-chain mechanism (e.g. payouts from a decentralized application or sidechain). The example is documented as if the client is reading the registry shortly after its `latestRevision` of 2023-04-14.
+
+The registry includes only one identity, `Example Payout Shares`, defined as authbase `978306aa4e02fd06e251b38d2e961f78f4af2ea6524a3e4531126776276a6af1`.
+
+The first issue of `Example Payout Shares` was issued as token category `978306aa4e02fd06e251b38d2e961f78f4af2ea6524a3e4531126776276a6af1` with symbol `XAMPL-23Q1`. On 2023-03-31, the asset experienced a a metadata update in which the initial token category was replaced with the current category `b1a35cadd5ddb1bd18787eeb99ee061f34b946f0db375d84caadd8ab621c10f5` and symbol `XAMPL-23Q2`. Token holders of the initial category (`978306...`) could visit the new snapshot's `migrate` URI (`https://app.example.com/payouts/2023Q1`) for guidance or assistance in exchanging `XAMPL-23Q1` tokens for the latest `XAMPL-23Q2` tokens; presumably, the new tokens are locked in an on-chain covenant with which `XAMPL-23Q1` holders can swap in their old tokens and receive both a payout for the first quarter of 2023 and the new `XAMPL-23Q2` tokens.
+
+Leading up to 2023-03-31, user wallets would have displayed tokens of the initial category (`978306...`) as `XAMPL`. When the new snapshot became effective, these wallets should have immediately switch to identifying `978306...` tokens as `XAMPL-23Q1`, as the category of the current snapshot (`b1a35c...`) became the new `XAMPL`. Users holding both assets would have seen them listed separately, as `XAMPL-23Q1` entitles the user to both an unpaid payout and current `XAMPL` (`XAMPL-23Q2`) tokens.
+
+Finally, the registry includes information for a planned future snapshot that will become current on 2023-06-30. Clients may notify users in advance if this snapshot appears to impact a user's holdings. As before, clients should consider the current tokens (category `b1a35c...`) to be `XAMPL` until the time of the migration. After the future snapshot comes into effect (`2023-06-30T00:00:00.000Z`), the current tokens should be labelled with their fully-qualified `symbol`, `XAMPL-23Q2`, while tokens of the third category (`89cad9...`) become the new `XAMPL`.
+
+Note, that the mechanics of this example can also be used to improve user experiences in cases where an asset is re-issued or migrated for other technical reasons: on-chain voting, fee assessment, mergers, spinoffs, resolution of contract vulnerabilities, etc.

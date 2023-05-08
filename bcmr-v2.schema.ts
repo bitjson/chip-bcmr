@@ -601,6 +601,7 @@ export type IdentitySnapshot = {
    * - `chat`
    * - `forum`
    * - `icon-intro`
+   * - `migrate`
    * - `registry`
    * - `support`
    *
@@ -694,11 +695,10 @@ export type ChainHistory = RegistryTimestampKeyedValues<ChainSnapshot>;
 
 /**
  * A timestamp-keyed map of {@link IdentitySnapshot}s documenting
- * the evolution of a particular identity. Typically, the current identity
- * information is the latest record when lexicographically sorted, but in cases
- * where a planned migration has not yet begun (the snapshot's timestamp has not
- * yet been reached), the immediately preceding record is considered the
- * current identity.
+ * the evolution of a particular identity. The current identity information is
+ * the snapshot associated with the latest timestamp reached. If no timestamp
+ * has yet been reached, the snapshot of the oldest timestamp is considered
+ * current. Future-dated timestamps indicate planned migrations.
  *
  * This strategy allows wallets and other user interfaces to offer better
  * experiences when an identity is rebranded, a token redenominated, or other
@@ -707,12 +707,9 @@ export type ChainHistory = RegistryTimestampKeyedValues<ChainSnapshot>;
  * hold; after the change, the wallet may continue to offer prominent interface
  * hints that the rebranded token identity was recently updated.
  *
- * Note, only the latest two {@link IdentitySnapshot}s should be considered
- * part of an identity's "current" information. E.g. even if two snapshots have
- * active, overlapping migration periods (i.e. an older snapshot's
- * {@link IdentitySnapshot.migrated} timestamp has not yet been reached),
- * clients should only attempt to display the migration from the previous to the
- * latest snapshot.
+ * Timestamps may be order by time via lexicographical sort. For determinism, it
+ * is recommended that implementations sort from newest to oldest in exported
+ * registry JSON files.
  *
  * If the current snapshot's {@link IdentitySnapshot.migrated} isn't specified,
  * the snapshot's index is a precise time at which the snapshot takes effect and
