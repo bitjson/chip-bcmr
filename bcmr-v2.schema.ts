@@ -601,6 +601,7 @@ export type IdentitySnapshot = {
    * - `chat`
    * - `forum`
    * - `icon-intro`
+   * - `image`
    * - `migrate`
    * - `registry`
    * - `support`
@@ -732,6 +733,10 @@ export type ChainHistory = RegistryTimestampKeyedValues<ChainSnapshot>;
  */
 export type IdentityHistory = RegistryTimestampKeyedValues<IdentitySnapshot>;
 
+/**
+ * An identity representing a metadata registry that is not published on-chain
+ * and therefore has no authbase or trackable authchain.
+ */
 export type OffChainRegistryIdentity = Pick<
   IdentitySnapshot,
   'name' | 'description' | 'uris' | 'tags' | 'extensions'
@@ -780,7 +785,7 @@ export type Registry = {
      * relevant user interfaces.
      *
      * For example, patch upgrades might include spelling corrections in an
-     * existing snapshot or the addition of an `icon-svg` containing a
+     * existing snapshot or the addition of an `icon` containing a
      * higher-resolution version of an existing `icon` image. On the other hand,
      * a rebranding in which the icon is substantially changed may warrant a new
      * identity snapshot to be added in a minor version upgrade.
