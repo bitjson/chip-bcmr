@@ -1,6 +1,6 @@
 # Registry Examples
 
-This directory includes several [Bitcoin Cash Metadata Registry](../readme.md) examples. Each example is briefly described below.
+This directory includes several [Bitcoin Cash Metadata Registry](./readme.md) examples. Each example is briefly described below.
 
 ## Fungible Token
 
