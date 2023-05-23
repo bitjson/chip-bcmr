@@ -5,14 +5,13 @@
   "words": [
     "authchains",
     "BCMR",
+    "gitter",
     "rebranded",
     "rebranding",
     "redenominated",
     "Redenomination",
     "TXLOCKTIME",
-    "XAMPL",
-    "XAMPLZ",
-    "XFFFF"
+    "wechat"
   ],
   "flagWords": [],
   "ignorePaths": [],
@@ -20,11 +19,16 @@
     {
       "name": "cash-address-format",
       "pattern": "/:[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+/g"
+    },
+    {
+      "name": "likely-ticker-symbol",
+      "pattern": "/[\"\\w]+[A-Z]+[\"\\w]+/g"
     }
   ],
   "ignoreRegExpList": [
     "Base64",
     "HexValues",
-    "cash-address-format"
+    "cash-address-format",
+    "likely-ticker-symbol"
   ]
 }
