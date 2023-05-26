@@ -6,7 +6,7 @@
         Maintainer: Jason Dreyzehner
         Status: Draft
         Initial Publication Date: 2022-10-31
-        Latest Revision Date: 2023-05-10
+        Latest Revision Date: 2023-05-26
         Version: 2.0.0-draft
 
 <details>
@@ -554,7 +554,8 @@ This section summarizes the evolution of this document.
   - Standardized parsing transaction to eliminate undefined behavior ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Converted `identities` from an array to an object ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Expanded guidelines for issuers and clients
-  - Defined NFT ticker symbols ([#8](https://github.com/bitjson/chip-bcmr/pull/7))
+  - Defined NFT ticker symbols ([#8](https://github.com/bitjson/chip-bcmr/pull/8))
+  - Simplified publication output encoding ([#10](https://github.com/bitjson/chip-bcmr/issues/10))
   - Added registry examples
 - **v1.0.0 – 2022-10-31** ([`5b24b0ec`](https://github.com/bitjson/chip-bcmr/blob/5b24b0ec93cf9316222ab2ea2e2ffe8a9f390b12/readme.md))
   - Initial publication
