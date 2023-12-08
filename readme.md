@@ -355,7 +355,7 @@ Token issuers should be aware that ticker symbols are not assigned by a centrali
 
 #### Providing for Continued Issuance of Fungible Tokens
 
-If additional fungible tokens of a category may be needed in the future, token issuers should initially mint an excess supply (e.g. the maximum supply of `9223372036854775807`) and hold the unissued tokens in the identity output with a [mutable token](https://github.com/bitjson/cashtokens#token-types) (using any `commitment` value) to indicate they are part of the [Unissued/Reserved Supply](https://github.com/bitjson/cashtokens#reserved-supply). This enables continued issuance from the identity output while maintaining the ability for light clients to verify the maximum possible [Circulating Supply](https://github.com/bitjson/cashtokens#circulating-supply).
+If additional fungible tokens of a category may be needed in the future, token issuers should initially mint an excess supply (e.g. the maximum supply of `9223372036854775807`) and hold the unissued tokens in the identity output to indicate they are part of the [Unissued/Reserved Supply](https://github.com/bitjson/cashtokens#reserved-supply). This enables continued issuance from the identity output while maintaining the ability for light clients to verify the maximum possible [Circulating Supply](https://github.com/bitjson/cashtokens#circulating-supply). For complex covenant systems a further extension can be defined where [mutable tokens](https://github.com/bitjson/cashtokens#token-types) serve as markers to enable multiple reserved supply outputs.
 
 #### Associating Information with NFTs
 
