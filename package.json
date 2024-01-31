@@ -6,7 +6,7 @@
   },
   "description": "This package provides package scripts to generate the Bitcoin Cash Metadata Registry JSON schema. To regenerate the schema, install the dependencies with 'npm install', then run 'npm start'.",
   "dependencies": {
-    "prettier": "^2.7.1",
-    "ts-json-schema-generator": "^1.1.2"
+    "prettier": "^3.2.4",
+    "ts-json-schema-generator": "^1.5.0"
   }
 }

@@ -928,11 +928,73 @@ export type Registry = {
   license?: string;
 
   /**
+   * A mapping of Unicode locale identifiers (conforming to those of
+   * ECMAScript's Intl.Locale object, e.g. `es` for Spanish) to localized
+   * versions of metadata registry contents.
+   *
+   * Localized values for `registryIdentity` objects and all `identities`,
+   * `tags`, `chains`, and `extensions` may be provided by reproducing the
+   * {@link Registry} object as a child of the appropriate locale property,
+   * e.g. `locales.es.registryIdentity.description` provides a Spanish (`es`)
+   * localization for the registry identity's `description`. Registries should
+   * not localize property keys, including URI and tag identifiers, to ensure
+   * that values can be associated across locales.
+   *
+   * **Outside of the locales property, metadata registries are considered to
+   * use the English Unicode locale (identifier: `en`)**. All other locales –
+   * including regional English locales like `en-US` or `en-GB` – must be
+   * provided via the locales property.
+   *
+   * **It is acceptable for registries to be partially-localized.** For example,
+   * some locales may exclude identities that appear in the `en` locale (and
+   * vice versa). Clients with localization support should attempt to use
+   * metadata from the user's preferred locale, falling back to metadata from
+   * the closest available locale.
+   *
+   * Note, it is not necessary for registries to include any metadata for the
+   * `en` locale, e.g. registries that omit the `identities`, `tags`, `chains`,
+   * and/or `extensions` properties from the top-level (`en` locale) may still
+   * include those properties for any number of other locales using the
+   * `locales` property.
+   *
+   * A localized registry is produced by the following algorithm:
+   *
+   * 1. Given the user's preferred locale, locate the registry's closest
+   * specified locale in the `locales` property. If a precise match is not
+   * available, fall back recursively to the closest available locale. If no
+   * matching language is available, default to `en`. E.g. If the user's
+   * preferred locale is `de-AT`, fall back to `de`, then `en`.
+   * 2. Beginning from the closest available locale, assemble a list of matching
+   * locales in reverse order of specificity. E.g. `["en", "de", "de-AT"]`.
+   * (Note, `en` is a special case; other `en` locales should not be included in
+   * this list for non-english locales.)
+   * 3. Create a localized registry by inheriting from each locale beginning
+   * with the least specific locale:
+   *   1. From the current locale, assign all `identities`, `tags`, `chains`,
+   *   and `extensions` to the generated locale, overriding the full definition
+   *   at that identifier with the localized definition from the more-specific
+   *   locale. (Note, replacement is object-level; do not attempt to merge two
+   *   definitions for the same identifier.)
+   *   2. If this client is deeply-validating the registry, verify the
+   * consistency of recognized, non-localized metadata and emit an error if any
+   * differences are found (e.g. metadata such as `token.category` and
+   * `token.symbol` should not vary between locales).
+   *   3. Repeat using the next-most-specific locale until all locales have
+   *   been applied.
+   *
+   * When the `locales` property is specified, clients supporting localization
+   * should use this localized registry for all metadata.
+   */
+  locales?: {
+    [localeIdentifier: string]: Pick<
+      Registry,
+      'chains' | 'extensions' | 'identities' | 'tags'
+    >;
+  };
+
+  /**
    * A mapping of `Registry` extension identifiers to extension definitions.
    * {@link Extensions} may be widely standardized or application-specific.
-   *
-   * Standardized extensions for `Registry`s include the `locale` extension. See
-   * https://github.com/bitjson/chip-bcmr#locales-extension for details.
    */
   extensions?: Extensions;
 };

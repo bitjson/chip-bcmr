@@ -279,6 +279,31 @@ Custom URI identifiers allow for sharing social networking profiles, p2p connect
 
 For example, some common identifiers include: `discord`, `docker`, `facebook`, `git`, `github`, `gitter`, `instagram`, `linkedin`, `matrix`, `npm`, `reddit`, `slack`, `substack`, `telegram`, `twitter`, `wechat`, `youtube`. Note that the `CC0-1.0`-licensed [Simple Icons](https://simpleicons.org/) project offers icons for these and many other identifiers.
 
+#### Localization
+
+A `Registry` may include a `locales` property to specify a mapping of Unicode locale identifiers (conforming to those of [ECMAScript's `Intl.Locale`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale) object, e.g. `es` for Spanish) to localized versions of metadata registry contents.
+
+Localized values for `registryIdentity` objects and all `identities`, `tags`, `chains`, and `extensions` may be provided by reproducing the `Registry` object as a child of the appropriate locale property, e.g. `locales.es.registryIdentity.description` provides a Spanish (`es`) localization for the registry identity's `description`. Registries should not localize property keys, including URI and tag identifiers, to ensure that values can be associated across locales.
+
+**Outside of the `locales` property, metadata registries are considered to use the `English` Unicode locale (identifier: `en`)**. All other locales – including regional English locales like `en-US` or `en-GB` – must be provided via the `locales` property.
+
+**It is acceptable for registries to be partially-localized.** For example, some locales may exclude identities that appear in the `en` locale (and vice versa). Clients with localization support should attempt to use metadata from the user's preferred locale, falling back to metadata from the closest available locale.
+
+Note, it is not necessary for registries to include any metadata for the `en` locale, e.g. registries that omit the `identities`, `tags`, `chains`, and/or `extensions` properties from the top-level (`en` locale) may still include those properties for any number of other locales using the `locales` property.
+
+##### Assembling Localized Registries
+
+A localized registry is produced by the following algorithm:
+
+1. Given the user's preferred locale, locate the registry's closest specified locale in the `locales` property. If a precise match is not available, fall back recursively to the closest available locale. If no matching language is available, default to `en`. E.g. If the user's preferred locale is `de-AT`, fall back to `de`, then `en`.
+2. Beginning from the closest available locale, assemble a list of matching locales in reverse order of specificity. E.g. `["en", "de", "de-AT"]`. (Note, `en` is a special case; other `en` locales should not be included in this list for non-english locales.)
+3. Create a localized registry by inheriting from each locale beginning with the least specific locale:
+   1. From the current locale, assign all `identities`, `tags`, `chains`, and `extensions` to the generated locale, overriding the full definition at that identifier with the localized definition from the more-specific locale. (Note, replacement is object-level; do not attempt to merge two definitions for the same identifier.)
+   2. If this client is deeply-validating the registry, verify the consistency of recognized, non-localized metadata and emit an error if any differences are found (e.g. metadata such as `token.category` and `token.symbol` should not vary between locales).
+   3. Repeat using the next-most-specific locale until all locales have been applied.
+
+When the `locales` property is specified, clients supporting localization should use this localized registry for all metadata.
+
 #### Extensions
 
 The metadata registry includes an optional `extensions` property for registries, identities, tags, NFT types, and NFT fields. Extensions offer the flexibility to associate arbitrary, vendor-specific metadata with a particular registry, identity, or tag.
@@ -299,30 +324,7 @@ For example, a `contact` extension could specify common contact information for 
 
 Like [Custom URI identifiers](#custom-uri-identifiers), extensions identifiers must be lowercase, alphanumeric strings, with no whitespace or special characters other than dashes (as a regular expression: `/^[-a-z0-9]+$/`).
 
-This specification standardizes several extensions.
-
-##### Locales Extension
-
-The `locales` extension is standardized for the `Registry` type. When provided, `locales` specifies a mapping of Unicode locale identifiers (conforming to [ECMAScript's `Intl.Locale`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale) object) to localized versions of metadata registry contents. The following optional properties may be provided within each locale: `identities`, `tags`, and `extensions`. (Note, registry property names and standardized identifiers are never localized.)
-
-**Outside of the `locales` extension, metadata registries are considered to be provided in the `English` Unicode locale (identifier: `en`)**. All other locales – including regional English locales like `en-US` or `en-GB` – must be provided via the `locale` extension.
-
-**It is acceptable for registries to be partially-localized.** For example, some locales may exclude identities that appear in the `en` locale (and vice versa). Clients with support for the `locale` extension will attempt to use metadata from the user's preferred locale, falling back to metadata from the closest available locale. (Note, it is not necessary for registries to include any metadata for the `en` locale; registries that omit both the `identities` and `tags` fields from the `en` locale may still provide either or both fields for any number of other locales using the `locales` extension.)
-
-Registries should avoid localizing custom identifiers (like URI and tag identifiers) to ensure consistency across all locales.
-
-###### Assembling Localized Registries
-
-A localized registry is produced by the following algorithm:
-
-1. Given the user's preferred locale, locate the registry's closest specified locale in the `locale` extension. If a precise match is not available, fall back recursively to the closest available locale. If no matching language is available, default to `en`. E.g. If the user's preferred locale is `de-AT`, fall back to `de`, then `en`.
-2. Beginning from the closest available locale, assemble a list of matching locales in reverse order of specificity. E.g. `["en", "de", "de-AT"]`. (Note, `en` is a special case; other `en` locales should not be included in this list for non-english locales.)
-3. Create a localized registry by inheriting from each locale beginning with the least specific locale:
-   1. From the current locale, assign all `identities`, `tags`, and `extensions` (excluding the `locale` extension) to the generated locale, overriding the full definition at that identifier with the localized definition from the more-specific locale. (Note, replacement is object-level; do not attempt to merge two definitions for the same identifier.)
-   2. If this client is deeply-validating the registry, verify the consistency of recognized, non-localized metadata and emit an error if any differences are found (e.g. metadata such as `token.category` and `token.symbol` should not vary between locales).
-   3. Repeat using the next-most-specific locale until all locales have been applied.
-
-When the `locales` extension is configured, clients should use this localized registry for all metadata.
+This specification standardizes the `authchain` extension.
 
 ##### Authchain Extension
 
@@ -542,7 +544,7 @@ _(pending initial implementations)_
 
 ## Acknowledgements
 
-Thank you to [Mathieu Geukens](https://github.com/mr-zwets), [bitcoincashautist](https://github.com/A60AB5450353F40E), and [Tom Zander](https://github.com/zander) for reviewing and contributing improvements to this proposal, providing feedback, and promoting consensus among stakeholders.
+Thank you to [Mathieu Geukens](https://github.com/mr-zwets), [bitcoincashautist](https://github.com/A60AB5450353F40E), [Tom Zander](https://github.com/zander), and [George Donnelly](https://github.com/georgedonnelly), for reviewing and contributing improvements to this proposal, providing feedback, and promoting consensus among stakeholders.
 
 ## Changelog
 
@@ -550,6 +552,7 @@ This section summarizes the evolution of this document.
 
 - **Draft v2.1.0**
   - Simplify guidelines for reserved supply ([#13](https://github.com/bitjson/chip-bcmr/pull/13))
+  - Lift `locales` from `extensions` to top level ([#14](https://github.com/bitjson/chip-bcmr/pull/14))
 - **v2.0.0 - 2023-05-26** ([`7b99f321`](https://github.com/bitjson/chip-bcmr/blob/7b99f321907906d718ea0d30ce126dd944d35392/readme.md))\*\*
   - Established limits for `Extensions` ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Support for multiple chains (defaults: `mainnet`, `chipnet`, `testnet4`) ([#7](https://github.com/bitjson/chip-bcmr/pull/7))

@@ -225,7 +225,7 @@
           },
           "extensions": {
             "$ref": "#/definitions/Extensions",
-            "description": "A mapping of NFT field extension identifiers to extension definitions.\n {@link  Extensions }  may be widely standardized or application-specific."
+            "description": "A mapping of NFT field extension identifiers to extension definitions.  {@link  Extensions }  may be widely standardized or application-specific."
           },
           "name": {
             "description": "The name of this field for use in interfaces. Names longer than `20` characters may be elided in some interfaces.\n\nE.g.:\n- `BCH Pledged`\n- `Tokens Sold`\n- `Settlement Locktime`\n- `Seat Number`,\n- `IPFS Content Identifier`\n- `HTTPS URL`",
@@ -252,7 +252,7 @@
         },
         "extensions": {
           "$ref": "#/definitions/Extensions",
-          "description": "A mapping of NFT type extension identifiers to extension definitions.\n {@link  Extensions }  may be widely standardized or application-specific."
+          "description": "A mapping of NFT type extension identifiers to extension definitions.  {@link  Extensions }  may be widely standardized or application-specific."
         },
         "fields": {
           "description": "A list of identifiers for fields contained in NFTs of this type. On successful parsing evaluations, the bottom item on the altstack indicates the matched NFT type, and the remaining altstack items represent NFT field contents in the order listed (where `fields[0]` is the second-to-bottom item, and the final item in `fields` is the top of the altstack).\n\nFields should be ordered by recommended importance from most important to least important; in user interfaces, clients should display fields at lower indexes more prominently than those at higher indexes, e.g. if some fields cannot be displayed in minimized interfaces, higher-importance fields can still be represented. (Note, this ordering is controlled by the bytecode specified in `token.nft.parse.bytecode`.)\n\nIf this is a sequential NFT, (the category's `parse.bytecode` is undefined), `fields` should be omitted or set to `undefined`.",
@@ -306,7 +306,7 @@
     },
     "ParsableNftCollection": {
       "additionalProperties": false,
-      "description": "Interpretation information for a collection of parsable NFTs, a collection in which each NFT may include additional metadata fields beyond a sequential identifier within its on-chain commitment. Note that\n {@link  ParsableNftCollection } s differ from  {@link  SequentialNftCollection } s in that parsable collections require a parsing `bytecode` with which to inspect each NFT commitment: the type of each NFT is indexed by the hex-encoded contents the bottom item on the altstack following the evaluation of the parsing bytecode.",
+      "description": "Interpretation information for a collection of parsable NFTs, a collection in which each NFT may include additional metadata fields beyond a sequential identifier within its on-chain commitment. Note that  {@link  ParsableNftCollection } s differ from  {@link  SequentialNftCollection } s in that parsable collections require a parsing `bytecode` with which to inspect each NFT commitment: the type of each NFT is indexed by the hex-encoded contents the bottom item on the altstack following the evaluation of the parsing bytecode.",
       "properties": {
         "bytecode": {
           "description": "A segment of hex-encoded Bitcoin Cash VM bytecode that parses UTXOs holding NFTs of this category, identifies the NFT's type within the category, and returns a list of the NFT's field values via the altstack. If undefined, this NFT Category includes only sequential NFTs, with only an identifier and no NFT fields encoded in each NFT's on-chain commitment.\n\nThe parse `bytecode` is evaluated by instantiating and partially verifying a standardized NFT parsing transaction:\n- version: `2`\n- inputs:   - 0: Spends the UTXO containing the NFT with an empty   unlocking bytecode and sequence number of `0`.   - 1: Spends index `0` of the empty hash outpoint, with locking   bytecode set to `parse.bytecode`, unlocking bytecode `OP_1`   (`0x51`) and sequence number `0`.\n- outputs:   - 0: A locking bytecode of OP_RETURN (`0x6a`) and value of `0`.\n- locktime: `0`\n\nAfter input 1 of this NFT parsing transaction is evaluated, if the resulting stack is not valid (a single \"truthy\" element remaining on the stack) – or if the altstack is empty – parsing has failed and clients should represent the NFT as unable to be parsed (e.g. simply display the full `commitment` as a hex-encoded value in the user interface).\n\nOn successful parsing evaluations, the bottom item on the altstack indicates the type of the NFT according to the matching definition in `types`. If no match is found, clients should represent the NFT as unable to be parsed.\n\nFor example: `00d2517f7c6b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_SWAP OP_TOALTSTACK OP_TOALTSTACK) splits the commitment after 1 byte, pushing the first byte to the altstack as an NFT type identifier and the remaining segment of the commitment as the first NFT field value.\n\nIf undefined (in a  {@link  SequentialNftCollection } ), this field could be considered to have a default value of `00d26b` (OP_0 OP_UTXOTOKENCOMMITMENT OP_TOALTSTACK), which takes the full contents of the commitment as a fixed type index. As such, each index of the NFT category's `types` maps a precise commitment value to the metadata for NFTs with that particular commitment. E.g. an NFT with an empty commitment (VM number 0) maps to `types['']`, a commitment of `01` (hex) maps to `types['01']`, etc. This pattern is used for collections of sequential NFTs.",
@@ -340,12 +340,12 @@
           "type": "object"
         },
         "defaultChain": {
-          "description": "The split ID of the chain/network considered the \"default\" chain for this registry. Identities that do not specify a  {@link  IdentitySnapshot.splitId } \nare assumed to be set to this split ID. For a description of split IDs, see  {@link  Registry.chains } .\n\nIf not provided, the `defaultChain` is `0000000000000000029e471c41818d24b8b74c911071c4ef0b4a0509f9b5a8ce`, the BCH side of the BCH/XEC split (mainnet). Common values include:\n- `00000000ae25e85d9e22cd6c8d72c2f5d4b0222289d801b7f633aeae3f8c6367` (testnet4)\n- `00000000040ba9641ba98a37b2e5ceead38e4e2930ac8f145c8094f94c708727` (chipnet)",
+          "description": "The split ID of the chain/network considered the \"default\" chain for this registry. Identities that do not specify a  {@link  IdentitySnapshot.splitId }  are assumed to be set to this split ID. For a description of split IDs, see  {@link  Registry.chains } .\n\nIf not provided, the `defaultChain` is `0000000000000000029e471c41818d24b8b74c911071c4ef0b4a0509f9b5a8ce`, the BCH side of the BCH/XEC split (mainnet). Common values include:\n- `00000000ae25e85d9e22cd6c8d72c2f5d4b0222289d801b7f633aeae3f8c6367` (testnet4)\n- `00000000040ba9641ba98a37b2e5ceead38e4e2930ac8f145c8094f94c708727` (chipnet)",
           "type": "string"
         },
         "extensions": {
           "$ref": "#/definitions/Extensions",
-          "description": "A mapping of `Registry` extension identifiers to extension definitions.\n {@link  Extensions }  may be widely standardized or application-specific.\n\nStandardized extensions for `Registry`s include the `locale` extension. See https://github.com/bitjson/chip-bcmr#locales-extension for details."
+          "description": "A mapping of `Registry` extension identifiers to extension definitions.  {@link  Extensions }  may be widely standardized or application-specific."
         },
         "identities": {
           "additionalProperties": {
@@ -361,6 +361,29 @@
         "license": {
           "description": "The license under which this registry is published. This may be specified as either a SPDX short identifier (https://spdx.org/licenses/) or by including the full text of the license.\n\nCommon values include:  - `CC0-1.0`: https://creativecommons.org/publicdomain/zero/1.0/  - `MIT`: https://opensource.org/licenses/MIT",
           "type": "string"
+        },
+        "locales": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "chains": {
+                "$ref": "#/definitions/Registry"
+              },
+              "extensions": {
+                "$ref": "#/definitions/Registry"
+              },
+              "identities": {
+                "$ref": "#/definitions/Registry"
+              },
+              "tags": {
+                "$ref": "#/definitions/Registry"
+              }
+            },
+            "required": ["chains", "extensions", "identities", "tags"],
+            "type": "object"
+          },
+          "description": "A mapping of Unicode locale identifiers (conforming to those of ECMAScript's Intl.Locale object, e.g. `es` for Spanish) to localized versions of metadata registry contents.\n\nLocalized values for `registryIdentity` objects and all `identities`, `tags`, `chains`, and `extensions` may be provided by reproducing the  {@link  Registry }  object as a child of the appropriate locale property, e.g. `locales.es.registryIdentity.description` provides a Spanish (`es`) localization for the registry identity's `description`. Registries should not localize property keys, including URI and tag identifiers, to ensure that values can be associated across locales.\n\n**Outside of the locales property, metadata registries are considered to use the English Unicode locale (identifier: `en`)**. All other locales – including regional English locales like `en-US` or `en-GB` – must be provided via the locales property.\n\n**It is acceptable for registries to be partially-localized.** For example, some locales may exclude identities that appear in the `en` locale (and vice versa). Clients with localization support should attempt to use metadata from the user's preferred locale, falling back to metadata from the closest available locale.\n\nNote, it is not necessary for registries to include any metadata for the `en` locale, e.g. registries that omit the `identities`, `tags`, `chains`, and/or `extensions` properties from the top-level (`en` locale) may still include those properties for any number of other locales using the `locales` property.\n\nA localized registry is produced by the following algorithm:\n\n1. Given the user's preferred locale, locate the registry's closest specified locale in the `locales` property. If a precise match is not available, fall back recursively to the closest available locale. If no matching language is available, default to `en`. E.g. If the user's preferred locale is `de-AT`, fall back to `de`, then `en`. 2. Beginning from the closest available locale, assemble a list of matching locales in reverse order of specificity. E.g. `[\"en\", \"de\", \"de-AT\"]`. (Note, `en` is a special case; other `en` locales should not be included in this list for non-english locales.) 3. Create a localized registry by inheriting from each locale beginning with the least specific locale:   1. From the current locale, assign all `identities`, `tags`, `chains`,   and `extensions` to the generated locale, overriding the full definition   at that identifier with the localized definition from the more-specific   locale. (Note, replacement is object-level; do not attempt to merge two   definitions for the same identifier.)   2. If this client is deeply-validating the registry, verify the consistency of recognized, non-localized metadata and emit an error if any differences are found (e.g. metadata such as `token.category` and `token.symbol` should not vary between locales).   3. Repeat using the next-most-specific locale until all locales have   been applied.\n\nWhen the `locales` property is specified, clients supporting localization should use this localized registry for all metadata.",
+          "type": "object"
         },
         "registryIdentity": {
           "anyOf": [
@@ -420,7 +443,7 @@
     },
     "SequentialNftCollection": {
       "additionalProperties": false,
-      "description": "Interpretation information for a collection of sequential NFTs, a collection in which each NFT includes only a sequential identifier within its on-chain commitment. Note that  {@link  SequentialNftCollection } s differ from\n {@link  ParsableNftCollection } s in that sequential collections lack a parsing `bytecode` with which to inspect each NFT commitment: the type of each NFT is indexed by the full contents its commitment (interpreted as a positive VM integer in user interfaces).",
+      "description": "Interpretation information for a collection of sequential NFTs, a collection in which each NFT includes only a sequential identifier within its on-chain commitment. Note that  {@link  SequentialNftCollection } s differ from  {@link  ParsableNftCollection } s in that sequential collections lack a parsing `bytecode` with which to inspect each NFT commitment: the type of each NFT is indexed by the full contents its commitment (interpreted as a positive VM integer in user interfaces).",
       "properties": {
         "types": {
           "additionalProperties": {
@@ -444,7 +467,7 @@
         },
         "extensions": {
           "$ref": "#/definitions/Extensions",
-          "description": "A mapping of `Tag` extension identifiers to extension definitions.\n {@link  Extensions }  may be widely standardized or application-specific."
+          "description": "A mapping of `Tag` extension identifiers to extension definitions.  {@link  Extensions }  may be widely standardized or application-specific."
         },
         "name": {
           "description": "The name of this tag for use in interfaces.\n\nIn user interfaces with limited space, names should be hidden beyond the first newline character or `20` characters until revealed by the user.\n\nE.g.:\n- `Individual`\n- `Token`\n- `Audited by ACME, Inc.`",
