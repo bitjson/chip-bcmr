@@ -6,8 +6,8 @@
         Maintainer: Jason Dreyzehner
         Status: Draft
         Initial Publication Date: 2022-10-31
-        Latest Revision Date: 2023-05-26
-        Version: 2.0.0-draft
+        Latest Revision Date: 2024-01-31
+        Version: 2.1.0-draft
 
 <details>
 
@@ -548,7 +548,9 @@ Thank you to [Mathieu Geukens](https://github.com/mr-zwets), [bitcoincashautist]
 
 This section summarizes the evolution of this document.
 
-- **Draft v2.0.0**
+- **Draft v2.1.0**
+  - Simplify guidelines for reserved supply ([#13](https://github.com/bitjson/chip-bcmr/pull/13))
+- **v2.0.0 - 2023-05-26** ([`7b99f321`](https://github.com/bitjson/chip-bcmr/blob/7b99f321907906d718ea0d30ce126dd944d35392/readme.md))\*\*
   - Established limits for `Extensions` ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Support for multiple chains (defaults: `mainnet`, `chipnet`, `testnet4`) ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
   - Simplified registry's conception of time ([#7](https://github.com/bitjson/chip-bcmr/pull/7))
